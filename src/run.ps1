@@ -275,7 +275,7 @@ function generate-rss-xml() {
 
 
 # test
-main -UserName $env:UserName -Password $env:Password
+main -UserName $env:OPENDRIVE_USERNAME -Password $env:OPENDRIVE_PASSWORD
 
 
 
