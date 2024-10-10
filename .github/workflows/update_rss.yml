@@ -13,13 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set Timezone to NZT
-        run: |
-          timedatectl set-timezone Pacific/Auckland
-          timedatectl
-
       - name: Run PowerShell script
         run: pwsh ./src/run.ps1
         env:
           OPENDRIVE_USERNAME: ${{ secrets.OPENDRIVE_USERNAME }}
           OPENDRIVE_PASSWORD: ${{ secrets.OPENDRIVE_PASSWORD }}
+          TZ: Pacific/Auckland
