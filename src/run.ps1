@@ -1,7 +1,16 @@
+#######################################################################
+#
+#   FileName: run.ps1
+#
+#   Purpose:
+#       Updates RSS Feed
+#
+#######################################################################
 
-$DebugPreference = 'SilentlyContinue'
-# $DebugPreference = 'Continue'
 
+$apiBaseURL="https://dev.opendrive.com/api/v1"
+$webBaseURL="https://www.opendrive.com"
+$webDavBaseURL="https://webdav.opendrive.com"
 
 function put-xml() {
     # localPath must be based on root of work - is a little complex to figure out I think.
@@ -13,9 +22,7 @@ function put-xml() {
         $FileList=@()
     )
 
-    $FileList | format-table -AutoSize | write-debug
-    # Define the WebDAV server URL and the file to update
-    $SERVER_URL = "https://webdav.opendrive.com"
+    $FileList | format-table -AutoSize | out-string | write-debug
 
     # Create a WebClient object
     $webclient = New-Object System.Net.WebClient
@@ -23,7 +30,7 @@ function put-xml() {
 
     # Upload the file
     $FileList | ForEach-Object {
-        $remotePath="$($SERVER_URL)$($_.remotePath)"
+        $remotePath="$($webDavBaseURL)$($_.remotePath)"
         write-debug "Upload $($_.localPath) to $($remotePath)"
         # get-item $_.localPath
         $webclient.UploadFile("$remotePath", "PUT", $_.localPath)
@@ -42,7 +49,7 @@ function close-session() {
         session_id = $sessionId
     } | convertto-json
 
-    $response = Invoke-WebRequest -Uri "https://dev.opendrive.com/api/v1/session/logout.json" -Method Post -Body $body -ContentType "application/json"
+    $response = Invoke-WebRequest -Uri "$($apiBaseURL)/session/logout.json" -Method Post -Body $body -ContentType "application/json"
 
     write-debug $response
     if ( ("$($response)" | convertfrom-json).result -eq $True ) {
@@ -67,7 +74,7 @@ function open-session() {
         passwd = $Password
     } | convertto-json
 
-    $loginResponse = Invoke-WebRequest -Uri "https://dev.opendrive.com/api/v1/session/login.json" -Method Post `
+    $loginResponse = Invoke-WebRequest -Uri "$($apiBaseURL)/session/login.json" -Method Post `
         -Body $body -ContentType "application/json"
 
     write-debug $loginResponse
@@ -90,7 +97,7 @@ function get-filelist() {
     } | convertto-json
 
     write-debug $body
-    $searchResponse = Invoke-WebRequest -Uri "https://dev.opendrive.com/api/v1/folder/idbypath.json" -Method Post -Body $body -ContentType "application/json"
+    $searchResponse = Invoke-WebRequest -Uri "$($apiBaseURL)/folder/idbypath.json" -Method Post -Body $body -ContentType "application/json"
 
     write-debug $searchResponse
     # Extract directory ID
@@ -98,7 +105,7 @@ function get-filelist() {
     write-debug "Directory ID: $($directoryId)"
 
     # Get & Structure FileList
-    $fileList = Invoke-WebRequest -Uri "https://dev.opendrive.com/api/v1/folder/list.json/$sessionId/$directoryId" -Method Get
+    $fileList = Invoke-WebRequest -Uri "$($apiBaseURL)/folder/list.json/$sessionId/$directoryId" -Method Get
 
     write-debug "FileList: $($fileList)"
     # Extract file IDs and download links
@@ -121,16 +128,15 @@ function get-filelist() {
 
 
 
-$GbBaseURL="https://www.opendrive.com"
 
 
 function get-publication-date() {
     param (
         $DayOfYear,
-        $minute
+        $seconds
     )
 
-    $date = ([datetime]::new(((get-date).Year),1,1).AddDays($DayOfYear -1).AddMinutes($minute)).ToString("ddd, dd MMMM yyyy HH:mm:ss zzz")
+    $date = ([datetime]::new(((get-date).Year),1,1).AddDays($DayOfYear -1).AddSeconds($seconds)).ToString("ddd, dd MMMM yyyy HH:mm:ss zzz")
 
     return $date
 }
@@ -145,9 +151,9 @@ function xml-header() {
 <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
 
-        <atom:link href="$($GbBaseURL)/bible_pod/rss" rel="self" type="application/rss+xml" />
+        <atom:link href="$($webBaseURL)/bible_pod/rss" rel="self" type="application/rss+xml" />
         <title>Bible (mk2) Zondervan TNIV $($vSection)</title>
-        <link>$($GbBaseURL)/bible_pod/rss</link>
+        <link>$($webBaseURL)/bible_pod/rss</link>
         <description>This is a Zondervan TNIV $($vSection)</description>
         <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
         <language>en-us</language>
@@ -159,7 +165,7 @@ function xml-header() {
             <itunes:name>Jared Church</itunes:name>
             <itunes:email>pjaredchurch@gmail.com</itunes:email>
         </itunes:owner>
-        <itunes:image href="$($GbBaseURL)" />
+        <itunes:image href="$($webBaseURL)" />
 "@
 
 # <itunes:category text="Category1" />
@@ -197,7 +203,7 @@ function xml-Body () {
                 <itunes:summary>$($data.Chapter)</itunes:summary>
                 <enclosure url="$($link)" length="filesize-in-bites" type="audio/mpeg" />
                 <guid>$((get-date).Year)-$($data.current)-$($data.Chapter)</guid>
-                <pubDate>$(get-publication-date -DayOfYear $data.current -minute $count)</pubDate>
+                <pubDate>$(get-publication-date -DayOfYear $data.current -seconds $count)</pubDate>
                 <itunes:keywords>$($data.Chapter)</itunes:keywords>
                 <category>Podcasts</category>
                 <itunes:explicit>no</itunes:explicit>
@@ -272,8 +278,8 @@ function main() {
 
     $fileListMedia=get-filelist -Path '/bible_pod/media' -SessionId $sessionId
     $fileListPlan=get-filelist -Path '/bible_pod' -SessionId $sessionId
-    # $fileListMedia.fileList | Format-Table -AutoSize
-    # $fileListPlan.fileList | Format-Table -AutoSize
+    $fileListMedia.fileList | Format-Table -AutoSize | out-string | write-debug
+    $fileListPlan.fileList | Format-Table -AutoSize | out-string | write-debug
 
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
         get-file -file $_
@@ -282,7 +288,6 @@ function main() {
     close-session $sessionId | write-debug
 
     generate-rss-xml -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList
-    # $fileListPlan.fileList[0]
 
     # Upload rss feeds
     if ( -not $NoUpload ) {
