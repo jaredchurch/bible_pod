@@ -1,8 +1,8 @@
 name: update_rss
 
 on:
-  # schedule:
-  #   - cron: '0 14 * * *' # This runs the workflow every day at 3 AM NZT (2 PM UTC the previous day)
+  schedule:
+    - cron: '0 14 * * *' # This runs the workflow every day at 3 AM NZT (2 PM UTC the previous day)
   workflow_dispatch:
 
 jobs:
