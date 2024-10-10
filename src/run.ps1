@@ -165,6 +165,19 @@ function main() {
 $GbBaseURL="https://www.opendrive.com"
 
 
+function get-publication-date() {
+    param (
+        $DayOfYear,
+        $second
+    )
+
+    $date = ([datetime]::new(((get-date).Year),1,1).AddDays($DayOfYear -1).AddSeconds($second))
+
+    return $date
+}
+
+
+
 function generate-rss-xml() {
     param (
         $plan,
@@ -207,7 +220,8 @@ function generate-rss-xml() {
 
     function xml-Body () {
         param (
-            $data
+            $data,
+            [Int]$count
         )
         # vDay=$(echo "${item}" | cut -d, -f1)
         # if [ ${vDay} -ne ${vPrevDay} ]
@@ -237,13 +251,15 @@ function generate-rss-xml() {
         <itunes:summary>$($data.Chapter)</itunes:summary>
         <enclosure url="$($link)" length="filesize-in-bites" type="audio/mpeg" />
         <guid>$((get-date).Year)-$($data.current)-$($data.Chapter)</guid>
-        <pubDate>$(get-date)</pubDate>
+        <pubDate>$(get-publication-date -DayOfYear $data.current -second $count)</pubDate>
         <itunes:keywords>$($data.Chapter)</itunes:keywords>
         <category>Podcasts</category>
         <itunes:explicit>no</itunes:explicit>
     </item>
 "@
     }
+
+
 
 
 
@@ -261,11 +277,13 @@ function generate-rss-xml() {
 
     # $data[0..10] | format-table
 
+    $global:i=0
     $data.Category | Select-Object -Unique | ForEach-Object {
         & {
             xml-header
-            ($data | where-object Category -eq $_) | ForEach-Object {
-                xml-body -data $_
+            ($data | where-object Category -eq $_)[0..10] | ForEach-Object {
+                $global:i++
+                xml-body -data $_ -count $i
             }
             xml-footer
         } | out-file -encoding ascii "./tniv_$($_).xml"
