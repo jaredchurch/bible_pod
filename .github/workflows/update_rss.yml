@@ -1,0 +1,15 @@
+name: update_rss
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up PowerShell
+        uses: actions/setup-pwsh@v2
+
+      - name: Run PowerShell script
+        run: pwsh ./src/run.ps1
