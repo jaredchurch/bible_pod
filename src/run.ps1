@@ -146,7 +146,7 @@ function xml-header() {
     <channel>
 
         <atom:link href="$($GbBaseURL)/bible_pod/rss" rel="self" type="application/rss+xml" />
-        <title>Bible Zondervan TNIV $($vSection)</title>
+        <title>Bible (mk2) Zondervan TNIV $($vSection)</title>
         <link>$($GbBaseURL)/bible_pod/rss</link>
         <description>This is a Zondervan TNIV $($vSection)</description>
         <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
@@ -290,6 +290,8 @@ function main() {
     }
 }
 
+
+write-output "Date: $(get-date)"
 
 try {
     main -UserName $env:OPENDRIVE_USERNAME -Password $env:OPENDRIVE_PASSWORD
