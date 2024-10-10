@@ -282,9 +282,12 @@ function main() {
 dir env: | grep OPENDRI
 env | grep OPENDRI
 
-main -UserName $env:OPENDRIVE_USERNAME -Password $env:OPENDRIVE_PASSWORD
-# -NoUpload
-
+try {
+    main -UserName $env:OPENDRIVE_USERNAME -Password $env:OPENDRIVE_PASSWORD
+    # -NoUpload
+} catch {
+    exit 1
+}
 
 
 ### End of File
