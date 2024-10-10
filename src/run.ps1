@@ -168,10 +168,10 @@ $GbBaseURL="https://www.opendrive.com"
 function get-publication-date() {
     param (
         $DayOfYear,
-        $second
+        $minute
     )
 
-    $date = ([datetime]::new(((get-date).Year),1,1).AddDays($DayOfYear -1).AddSeconds($second))
+    $date = ([datetime]::new(((get-date).Year),1,1).AddDays($DayOfYear -1).AddMinutes($minute)).ToString("ddd, dd MMMM yyyy HH:mm:ss zzz")
 
     return $date
 }
@@ -251,7 +251,7 @@ function generate-rss-xml() {
         <itunes:summary>$($data.Chapter)</itunes:summary>
         <enclosure url="$($link)" length="filesize-in-bites" type="audio/mpeg" />
         <guid>$((get-date).Year)-$($data.current)-$($data.Chapter)</guid>
-        <pubDate>$(get-publication-date -DayOfYear $data.current -second $count)</pubDate>
+        <pubDate>$(get-publication-date -DayOfYear $data.current -minute $count)</pubDate>
         <itunes:keywords>$($data.Chapter)</itunes:keywords>
         <category>Podcasts</category>
         <itunes:explicit>no</itunes:explicit>
@@ -281,7 +281,7 @@ function generate-rss-xml() {
     $data.Category | Select-Object -Unique | ForEach-Object {
         & {
             xml-header
-            ($data | where-object Category -eq $_)[0..10] | ForEach-Object {
+            ($data | where-object Category -eq $_) | ForEach-Object {
                 $global:i++
                 xml-body -data $_ -count $i
             }
