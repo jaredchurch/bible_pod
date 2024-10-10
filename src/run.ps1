@@ -234,6 +234,14 @@ function generate-rss-xml() {
 
 }
 
+function get-file() {
+    param (
+        [PSCustomObject]$file
+    )
+
+    wget $file.DownloadLink --output-document="$($file.Name)" --quiet
+}
+
 function main() {
     param (
         $UserName,
@@ -267,12 +275,16 @@ function main() {
     # $fileListMedia.fileList | Format-Table -AutoSize
     # $fileListPlan.fileList | Format-Table -AutoSize
 
+    $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
+        get-file -file $_
+    }
+
     close-session $sessionId | write-debug
 
     generate-rss-xml -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList
     # $fileListPlan.fileList[0]
 
-    # $PutFiles | format-table -AutoSize
+    # Upload rss feeds
     if ( -not $NoUpload ) {
         put-xml -USERNAME $UserName -PASSWORD $Password -fileList $PutFiles
     }
