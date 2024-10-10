@@ -121,10 +121,126 @@ function get-filelist() {
 
 
 
+$GbBaseURL="https://www.opendrive.com"
+
+
+function get-publication-date() {
+    param (
+        $DayOfYear,
+        $minute
+    )
+
+    $date = ([datetime]::new(((get-date).Year),1,1).AddDays($DayOfYear -1).AddMinutes($minute)).ToString("ddd, dd MMMM yyyy HH:mm:ss zzz")
+
+    return $date
+}
+
+function xml-header() {
+    param (
+        $vSection
+    )
+
+        Write-Output @"
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+
+        <atom:link href="$($GbBaseURL)/bible_pod/rss" rel="self" type="application/rss+xml" />
+        <title>Bible Zondervan TNIV $($vSection)</title>
+        <link>$($GbBaseURL)/bible_pod/rss</link>
+        <description>This is a Zondervan TNIV $($vSection)</description>
+        <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
+        <language>en-us</language>
+        <copyright>Audio Copyright © Zondervan</copyright>
+        <itunes:subtitle></itunes:subtitle>
+        <itunes:author>Jared Church</itunes:author>
+        <itunes:summary>Bible $($vSection)</itunes:summary>
+        <itunes:owner>
+            <itunes:name>Jared Church</itunes:name>
+            <itunes:email>pjaredchurch@gmail.com</itunes:email>
+        </itunes:owner>
+        <itunes:image href="$($GbBaseURL)" />
+"@
+
+# <itunes:category text="Category1" />
+# <itunes:category text="Category2">
+#     <itunes:category text="Subcategory" />
+# </itunes:category>
+
+}
+
+function xml-footer () {
+    write-output @"
+
+        <itunes:explicit>no</itunes:explicit>
+    </channel>
+</rss>
+"@
+}
+
+function xml-Body () {
+    param (
+        $data,
+        [Int]$count
+    )
+
+    # $links | format-table
+    $link = ($links | Where-Object Name -eq $data.Chapter).DownloadLink
+
+    write-debug "$($data)"
+    write-output @"
+            <item>
+                <title>$($data.Chapter)</title>
+                <link>$($link)</link>
+                <itunes:author>Zondervan</itunes:author>
+                <description>$($data.Chapter)</description>
+                <itunes:summary>$($data.Chapter)</itunes:summary>
+                <enclosure url="$($link)" length="filesize-in-bites" type="audio/mpeg" />
+                <guid>$((get-date).Year)-$($data.current)-$($data.Chapter)</guid>
+                <pubDate>$(get-publication-date -DayOfYear $data.current -minute $count)</pubDate>
+                <itunes:keywords>$($data.Chapter)</itunes:keywords>
+                <category>Podcasts</category>
+                <itunes:explicit>no</itunes:explicit>
+            </item>
+"@
+}
+
+
+
+function generate-rss-xml() {
+    param (
+        $plan,
+        $links
+    )
+
+
+    $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current)
+
+    # $data[0..10] | format-table
+    $global:i=0
+    $data.Category | Select-Object -Unique | ForEach-Object {
+        # ($data | where-object Category -eq $_) | where-object Chapter -eq "Jude 01.mp3" | sort-object current |  format-table
+
+        & {
+            xml-header -vSection $_
+            ($data | where-object Category -eq $_ | sort-object [Int]::current) | ForEach-Object {
+                # if ( $_.Chapter -eq "Jude 01.mp3" ) {
+                #     write-warning "$($_.current):$($_.Chapter)"
+                # }
+                $global:i++
+                xml-body -data $_ -count $i
+            }
+            xml-footer
+        } | out-file -encoding ascii "./tniv_$($_).xml"
+    }
+
+}
+
 function main() {
     param (
         $UserName,
-        $Password
+        $Password,
+        [switch]$NoUpload
     )
     $PutFiles=@(
         @{
@@ -150,8 +266,8 @@ function main() {
 
     $fileListMedia=get-filelist -Path '/bible_pod/media' -SessionId $sessionId
     $fileListPlan=get-filelist -Path '/bible_pod' -SessionId $sessionId
-    $fileListMedia.fileList | Format-Table -AutoSize | write-debug
-    $fileListPlan.fileList | Format-Table -AutoSize | write-debug
+    # $fileListMedia.fileList | Format-Table -AutoSize
+    # $fileListPlan.fileList | Format-Table -AutoSize
 
     close-session $sessionId | write-debug
 
@@ -159,140 +275,15 @@ function main() {
     # $fileListPlan.fileList[0]
 
     # $PutFiles | format-table -AutoSize
-    put-xml -USERNAME $UserName -PASSWORD $Password -fileList $PutFiles
+    if ( -not $NoUpload ) {
+        put-xml -USERNAME $UserName -PASSWORD $Password -fileList $PutFiles
+    }
 }
 
-$GbBaseURL="https://www.opendrive.com"
-
-
-function get-publication-date() {
-    param (
-        $DayOfYear,
-        $minute
-    )
-
-    $date = ([datetime]::new(((get-date).Year),1,1).AddDays($DayOfYear -1).AddMinutes($minute)).ToString("ddd, dd MMMM yyyy HH:mm:ss zzz")
-
-    return $date
-}
-
-
-
-function generate-rss-xml() {
-    param (
-        $plan,
-        $links
-    )
-
-    function xml-header() {
-        param (
-            $vSection
-        )
-
-            Write-Output @"
-<?xml version="1.0" encoding="utf-8"?>
-<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
-<channel>
-
-    <atom:link href="$($GbBaseURL)/bible_pod" rel="self" type="application/rss+xml" />
-    <title>Bible Zondervan TNIV$($vSection)</title>
-    <link>$($GbBaseURL)/podcast.xml</link>
-    <description>This is a Zondervan TNIV$($vSection)</description>
-    <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
-    <language>en-us</language>
-    <copyright>Copyright 2017 ©Jared Church</copyright>
-    <itunes:subtitle></itunes:subtitle>
-    <itunes:author>Jared Church</itunes:author>
-    <itunes:summary>Bible$($vSection)</itunes:summary>
-    <itunes:owner>
-        <itunes:name>Jared Church</itunes:name>
-        <itunes:email>pjaredchurch@gmail.com</itunes:email>
-    </itunes:owner>
-    <itunes:image href="$($GbBaseURL)" />
-    <itunes:category text="Category1" />
-    <itunes:category text="Category2">
-        <itunes:category text="Subcategory" />
-    </itunes:category>
-
-"@
-    }
-
-
-    function xml-Body () {
-        param (
-            $data,
-            [Int]$count
-        )
-        # vDay=$(echo "${item}" | cut -d, -f1)
-        # if [ ${vDay} -ne ${vPrevDay} ]
-        # then
-        #         j=0
-        #         vPrevDay=${vDay}
-        # fi
-
-        # j=$(expr ${j} + 1)
-        # i=$(expr ${i} + 1)
-        # vBook=$(echo "${item}" | cut -d, -f2 | sed "s/{space}/ /g")
-        # vD1=$(date -d ${gbYear}-01-01 +%s)
-        # vD2=$(echo "${vD1} + (${vTimeAdjust} * 60 * 60) + 1 + (${j} * 60) + (60 * 60 * 24 * ${vDay})" | bc)
-        # vDate=$(date -d @${vD2} -R)
-        # vURL=$(find /var/www/html/bible/media2 -name "${vBook}" -print | cut -d/ -f 6-)
-
-        # $links | format-table
-        $link = ($links | Where-Object Name -eq $data.Chapter).DownloadLink
-
-        write-debug "$($data)"
-        write-output @"
-    <item>
-        <title>$($data.Chapter)</title>
-        <link>$($link)</link>
-        <itunes:author>Zondervan</itunes:author>
-        <description>$($data.Chapter)</description>
-        <itunes:summary>$($data.Chapter)</itunes:summary>
-        <enclosure url="$($link)" length="filesize-in-bites" type="audio/mpeg" />
-        <guid>$((get-date).Year)-$($data.current)-$($data.Chapter)</guid>
-        <pubDate>$(get-publication-date -DayOfYear $data.current -minute $count)</pubDate>
-        <itunes:keywords>$($data.Chapter)</itunes:keywords>
-        <category>Podcasts</category>
-        <itunes:explicit>no</itunes:explicit>
-    </item>
-"@
-    }
-
-
-
-
-
-    function xml-footer () {
-        write-output @"
-
-    <itunes:explicit>no</itunes:explicit>
-    </channel>
-</rss>
-"@
-    }
-
-
-    $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current)
-
-    # $data[0..10] | format-table
-
-    $global:i=0
-    $data.Category | Select-Object -Unique | ForEach-Object {
-        & {
-            xml-header
-            ($data | where-object Category -eq $_) | ForEach-Object {
-                $global:i++
-                xml-body -data $_ -count $i
-            }
-            xml-footer
-        } | out-file -encoding ascii "./tniv_$($_).xml"
-    }
-
-}
 
 
 main -UserName $env:OPENDRIVE_USERNAME -Password $env:OPENDRIVE_PASSWORD
+# -NoUpload
 
 
 
