@@ -215,18 +215,16 @@ function generate-rss-xml() {
 
 
     $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current)
+    $data | ForEach-Object { $_.current = [int]$_.current }
 
     # $data[0..10] | format-table
     $global:i=0
     $data.Category | Select-Object -Unique | ForEach-Object {
-        # ($data | where-object Category -eq $_) | where-object Chapter -eq "Jude 01.mp3" | sort-object current |  format-table
-
         & {
             xml-header -vSection $_
-            ($data | where-object Category -eq $_ | sort-object [Int]::current) | ForEach-Object {
-                # if ( $_.Chapter -eq "Jude 01.mp3" ) {
-                #     write-warning "$($_.current):$($_.Chapter)"
-                # }
+            $dataFilterSort = $data | where-object Category -eq $_ | where-object current -le ((get-date).DayOfYear) | sort-object current,Chapter
+            $dataFilterSort[-10..-1] | write-debug
+            $dataFilterSort | ForEach-Object {
                 $global:i++
                 xml-body -data $_ -count $i
             }
