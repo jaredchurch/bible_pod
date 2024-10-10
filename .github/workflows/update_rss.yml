@@ -18,3 +18,6 @@ jobs:
 
       - name: Run PowerShell script
         run: pwsh ./src/run.ps1
+        env:
+          OPENDRIVE_USERNAME: ${{ secrest.OPENDRIVE_USERNAME }}
+          OPENDRIVE_PASSWORD: ${{ secrest.OPENDRIVE_PASSWORD }}
