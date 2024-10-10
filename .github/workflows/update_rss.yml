@@ -15,7 +15,7 @@ jobs:
 
       - name: Run PowerShell script
         run: |
-          $DebugPreference='Continue'
+          DebugPreference='Continue'
           pwsh ./src/run.ps1
         env:
           OPENDRIVE_USERNAME: ${{ secrets.OPENDRIVE_USERNAME }}
