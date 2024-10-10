@@ -13,8 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # - name: Set up PowerShell
-      #   uses: actions/setup-pwsh@v2
+      - name: Set Timezone to NZT
+        run: |
+          timedatectl set-timezone Pacific/Auckland
+          timedatectl
 
       - name: Run PowerShell script
         run: pwsh ./src/run.ps1
