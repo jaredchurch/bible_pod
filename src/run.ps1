@@ -279,9 +279,6 @@ function main() {
 }
 
 
-dir env: | grep OPENDRI
-env | grep OPENDRI
-
 try {
     main -UserName $env:OPENDRIVE_USERNAME -Password $env:OPENDRIVE_PASSWORD
     # -NoUpload
