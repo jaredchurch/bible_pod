@@ -30,7 +30,9 @@
 			
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
-				"ms-vscode.powershell"
+				"ms-vscode.powershell",
+				"ms-vscode-remote.remote-containers",
+				"GitHub.codespaces"
 			]
 		}
 	}
