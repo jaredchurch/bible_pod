@@ -7,6 +7,10 @@
 #
 #######################################################################
 
+param (
+    [switch]$noUpload
+)
+
 
 $apiBaseURL="https://dev.opendrive.com/api/v1"
 $webBaseURL="https://www.opendrive.com"
@@ -143,7 +147,8 @@ function get-publication-date() {
 
 function xml-header() {
     param (
-        $vSection
+        $vSection,
+        $image
     )
 
         Write-Output @"
@@ -152,7 +157,7 @@ function xml-header() {
     <channel>
 
         <atom:link href="$($webBaseURL)/bible_pod/rss" rel="self" type="application/rss+xml" />
-        <title>Bible (mk2) Zondervan TNIV $($vSection)</title>
+        <title>Bible - Zondervan TNIV $($vSection)</title>
         <link>$($webBaseURL)/bible_pod/rss</link>
         <description>This is a Zondervan TNIV $($vSection)</description>
         <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
@@ -165,7 +170,7 @@ function xml-header() {
             <itunes:name>Jared Church</itunes:name>
             <itunes:email>pjaredchurch@gmail.com</itunes:email>
         </itunes:owner>
-        <itunes:image href="$($webBaseURL)" />
+        <itunes:image href="$($image)" />
 "@
 
 # <itunes:category text="Category1" />
@@ -216,7 +221,8 @@ function xml-Body () {
 function generate-rss-xml() {
     param (
         $plan,
-        $links
+        $links,
+        $images
     )
 
 
@@ -225,9 +231,12 @@ function generate-rss-xml() {
 
     # $data[0..10] | format-table
     $global:i=0
-    $data.Category | Select-Object -Unique | ForEach-Object {
+
+
+    $data.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
+        $image=$images | where-object Name -like "*$($_).jpg"
         & {
-            xml-header -vSection $_
+            xml-header -vSection $_ -image $image.DownloadLink
             $dataFilterSort = $data | where-object Category -eq $_ | where-object current -le ((get-date).DayOfYear) | sort-object current,Chapter
             $dataFilterSort[-10..-1] | write-debug
             $dataFilterSort | ForEach-Object {
@@ -237,6 +246,8 @@ function generate-rss-xml() {
             xml-footer
         } | out-file -encoding ascii "./tniv_$($_).xml"
     }
+
+    $data.Category | Select-Object -Unique | write-debug
 
 }
 
@@ -252,7 +263,7 @@ function main() {
     param (
         $UserName,
         $Password,
-        [switch]$NoUpload
+        $NoUpload
     )
     $PutFiles=@(
         @{
@@ -278,29 +289,34 @@ function main() {
 
     $fileListMedia=get-filelist -Path '/bible_pod/media' -SessionId $sessionId
     $fileListPlan=get-filelist -Path '/bible_pod' -SessionId $sessionId
+    $fileListImages=get-filelist -Path '/bible_pod/images' -SessionId $sessionId
     $fileListMedia.fileList | Format-Table -AutoSize | out-string | write-debug
     $fileListPlan.fileList | Format-Table -AutoSize | out-string | write-debug
-
+    $fileListImages.fileList | Format-Table -AutoSize | out-string | write-debug
+  
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
         get-file -file $_
     }
 
     close-session $sessionId | write-debug
 
-    generate-rss-xml -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList
+    generate-rss-xml -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
 
     # Upload rss feeds
     if ( -not $NoUpload ) {
+        write-debug "Uploading xml"
         put-xml -USERNAME $UserName -PASSWORD $Password -fileList $PutFiles
     }
 }
 
 
+# $DebugPreference = "SilentlyContinue"
+$DebugPreference = "Continue"
+
 write-output "Date: $(get-date)"
 
 try {
-    main -UserName $env:OPENDRIVE_USERNAME -Password $env:OPENDRIVE_PASSWORD
-    # -NoUpload
+    main -UserName $env:OPENDRIVE_USERNAME -Password $env:OPENDRIVE_PASSWORD -NoUpload $noUpload
 } catch {
     exit 1
 }
