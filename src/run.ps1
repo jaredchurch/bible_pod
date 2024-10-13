@@ -52,12 +52,9 @@ function main() {
 
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | out-string | write-debug
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
-        get-file2 -file $_ -SessionId $sessionId
+        get-file -file $_ -SessionId $sessionId
     }
 
-    # write-debug test
-    # throw "test exit"
-    # write-debug test2
     close-session $sessionId | write-debug
 
     generate-rss-xml -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
@@ -71,7 +68,7 @@ function main() {
 
 ################################# SCRIPT #################################
 $DebugPreference = "Continue"
-# $DebugPreference = "SilentlyContinue"
+$DebugPreference = "SilentlyContinue"
 
 write-output "Date: $(get-date)"
 

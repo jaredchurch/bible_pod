@@ -120,7 +120,7 @@ function get-filelist() {
 }
 
 
-function get-file() {
+function get-file-old() {
     param (
         [PSCustomObject]$file
     )
@@ -128,7 +128,7 @@ function get-file() {
     wget $file.DownloadLink --output-document="$($file.Name)" --quiet
 }
 
-function get-file2() {
+function get-file() {
     param (
         $SessionId,
         [PSCustomObject]$file

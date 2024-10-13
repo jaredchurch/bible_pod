@@ -58,9 +58,9 @@ $rssItem=@"
                 <itunes:keywords>{{keywords}}</itunes:keywords>
                 <category>Podcasts</category>
                 <itunes:explicit>no</itunes:explicit>
-                <itunes:duration>{{duration}}}}</itunes:duration>
             </item>
 "@
+#                <itunes:duration>{{duration}}</itunes:duration>
 
 
 
