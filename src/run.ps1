@@ -52,7 +52,7 @@ function main() {
 
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | out-string | write-debug
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
-        get-file -file $_
+        get-file2 -file $_ -SessionId $sessionId
     }
 
     # write-debug test

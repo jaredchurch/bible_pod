@@ -128,6 +128,21 @@ function get-file() {
     wget $file.DownloadLink --output-document="$($file.Name)" --quiet
 }
 
+function get-file2() {
+    param (
+        $SessionId,
+        [PSCustomObject]$file
+    )
+
+    $body=@{
+        session_id = $SessionId
+        file_id = $Path
+    } | convertto-json
+
+    $url="$($apiBaseURL)/download/file.json/$($file.FileId)"
+
+    Invoke-WebRequest -Uri $url -Method GET -Body $body -ContentType "application/json" -OutFile $file.Name
+}
 
 
 
