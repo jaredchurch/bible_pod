@@ -50,10 +50,14 @@ function main() {
     $fileListImages=get-filelist -Path '/bible_pod/images' -SessionId $sessionId
     $fileListImages.fileList | Format-Table -AutoSize | out-string | write-debug
 
+    $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | out-string | write-debug
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
         get-file -file $_
     }
 
+    # write-debug test
+    # throw "test exit"
+    # write-debug test2
     close-session $sessionId | write-debug
 
     generate-rss-xml -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
@@ -67,7 +71,7 @@ function main() {
 
 ################################# SCRIPT #################################
 $DebugPreference = "Continue"
-$DebugPreference = "SilentlyContinue"
+# $DebugPreference = "SilentlyContinue"
 
 write-output "Date: $(get-date)"
 

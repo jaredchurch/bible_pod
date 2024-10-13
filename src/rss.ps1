@@ -29,7 +29,7 @@ $rssHeader=@"
         <description>This is a Zondervan TNIV {{section}}</description>
         <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
         <language>en-us</language>
-        <copyright>Audio Copyright © Zondervan</copyright>
+        <copyright>Audio Copyright &copy; Zondervan</copyright>
         <itunes:subtitle></itunes:subtitle>
         <itunes:author>Jared Church</itunes:author>
         <itunes:summary>Bible {{section}}</itunes:summary>
@@ -50,7 +50,7 @@ $rssItem=@"
                 <title>{{title}}</title>
                 <link>{{link}}</link>
                 <itunes:author>Zondervan</itunes:author>
-                <description>{{description}}</description>
+                <description><![CDATA[{{description}}<br /><br /><br />&copy; 2005 Zondervan]]></description>
                 <itunes:summary>{{summary}}</itunes:summary>
                 <enclosure url="{{link}}" length="{{size-bytes}}" type="audio/mpeg" />
                 <guid>{{guid}}</guid>
@@ -58,6 +58,7 @@ $rssItem=@"
                 <itunes:keywords>{{keywords}}</itunes:keywords>
                 <category>Podcasts</category>
                 <itunes:explicit>no</itunes:explicit>
+                <itunes:duration>{{duration}}}}</itunes:duration>
             </item>
 "@
 
@@ -112,7 +113,8 @@ function xml-Body () {
             -replace '{{size-bytes}}',$fileInfo.Size `
             -replace '{{guid}}', "$((get-date).Year)-$($data.current)-$($data.Chapter)" `
             -replace '{{pubDate}}',(get-publication-date -DayOfYear $data.current -seconds $count) `
-            -replace '{{keywords}}',$data.Chapter
+            -replace '{{keywords}}',$data.Chapter `
+            -replace '{{duration}}','0'
     )
 
     write-output "$($string)"
@@ -130,11 +132,14 @@ function generate-rss-xml() {
 
 
     $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current)
-    $data | ForEach-Object { $_.current = [int]$_.current }
+    $data[0..5] | format-table | out-string | write-debug
+    $data | ForEach-Object {
+        $_.current = [int]$_.current
+    }
 
-    # $data[0..10] | format-table
     $global:i=0
 
+    write-debug "hello 2"
 
     $data.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
         $image=$images | where-object Name -like "*$($_).jpg"
@@ -149,6 +154,7 @@ function generate-rss-xml() {
             xml-footer
         } | out-file -encoding ascii "./tniv_$($_).xml"
     }
+    write-debug "hello 3"
 
     $data.Category | Select-Object -Unique | write-debug
 
