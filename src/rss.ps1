@@ -58,9 +58,9 @@ $rssItem=@"
                 <itunes:keywords>{{keywords}}</itunes:keywords>
                 <category>Podcasts</category>
                 <itunes:explicit>no</itunes:explicit>
+                <itunes:duration>{{duration}}</itunes:duration>
             </item>
 "@
-#                <itunes:duration>{{duration}}</itunes:duration>
 
 
 
@@ -114,7 +114,7 @@ function xml-Body () {
             -replace '{{guid}}', "$((get-date).Year)-$($data.current)-$($data.Chapter)" `
             -replace '{{pubDate}}',(get-publication-date -DayOfYear $data.current -seconds $count) `
             -replace '{{keywords}}',$data.Chapter `
-            -replace '{{duration}}','0'
+            -replace '{{duration}}',$data.'Length Seconds'
     )
 
     write-output "$($string)"
@@ -131,15 +131,14 @@ function generate-rss-xml() {
     )
 
 
-    $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current)
+    $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current,'Length Seconds')
     $data[0..5] | format-table | out-string | write-debug
     $data | ForEach-Object {
         $_.current = [int]$_.current
+        $_.'Length Seconds' = [int]$_.'Length Seconds'
     }
 
     $global:i=0
-
-    write-debug "hello 2"
 
     $data.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
         $image=$images | where-object Name -like "*$($_).jpg"
@@ -154,7 +153,6 @@ function generate-rss-xml() {
             xml-footer
         } | out-file -encoding ascii "./tniv_$($_).xml"
     }
-    write-debug "hello 3"
 
     $data.Category | Select-Object -Unique | write-debug
 
