@@ -45,6 +45,23 @@ $rssHeader=@"
 # </itunes:category>
 
 
+$rssItem=@"
+            <item>
+                <title>{{title}}</title>
+                <link>{{link}}</link>
+                <itunes:author>Zondervan</itunes:author>
+                <description>{{description}}</description>
+                <itunes:summary>{{summary}}</itunes:summary>
+                <enclosure url="{{link}}" length="{{size-bytes}}" type="audio/mpeg" />
+                <guid>{{guid}}</guid>
+                <pubDate>{{pubDate}}</pubDate>
+                <itunes:keywords>{{keywords}}</itunes:keywords>
+                <category>Podcasts</category>
+                <itunes:explicit>no</itunes:explicit>
+            </item>
+"@
+
+
 
 function get-publication-date() {
     param (
@@ -85,25 +102,21 @@ function xml-Body () {
 
     $fileInfo = ($links | Where-Object Name -eq $data.Chapter)
     $fileInfo | format-table | out-string | write-debug
-    # $link = ($links | Where-Object Name -eq $data.Chapter).DownloadLink
 
+    $string=(
+        "$($rssItem)" `
+            -replace '{{title}}',$data.Chapter `
+            -replace '{{link}}',$fileInfo.DownloadLink `
+            -replace '{{description}}',$data.Chapter `
+            -replace '{{summary}}',$data.Chapter `
+            -replace '{{size-bytes}}',$fileInfo.Size `
+            -replace '{{guid}}', "$((get-date).Year)-$($data.current)-$($data.Chapter)" `
+            -replace '{{pubDate}}',(get-publication-date -DayOfYear $data.current -seconds $count) `
+            -replace '{{keywords}}',$data.Chapter
+    )
 
-    write-debug "$($data)"
-    write-output @"
-            <item>
-                <title>$($data.Chapter)</title>
-                <link>$($fileInfo.DownloadLink)</link>
-                <itunes:author>Zondervan</itunes:author>
-                <description>$($data.Chapter)</description>
-                <itunes:summary>$($data.Chapter)</itunes:summary>
-                <enclosure url="$($fileInfo.DownloadLink)" length="$($fileInfo.Size)" type="audio/mpeg" />
-                <guid>$((get-date).Year)-$($data.current)-$($data.Chapter)</guid>
-                <pubDate>$(get-publication-date -DayOfYear $data.current -seconds $count)</pubDate>
-                <itunes:keywords>$($data.Chapter)</itunes:keywords>
-                <category>Podcasts</category>
-                <itunes:explicit>no</itunes:explicit>
-            </item>
-"@
+    write-output "$($string)"
+
 }
 
 
