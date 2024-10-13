@@ -44,12 +44,12 @@ function main() {
     $sessionId=open-session -UserName $UserName -Password $Password
 
     $fileListMedia=get-filelist -Path '/bible_pod/media' -SessionId $sessionId
-    $fileListPlan=get-filelist -Path '/bible_pod' -SessionId $sessionId
-    $fileListImages=get-filelist -Path '/bible_pod/images' -SessionId $sessionId
     $fileListMedia.fileList | Format-Table -AutoSize | out-string | write-debug
+    $fileListPlan=get-filelist -Path '/bible_pod' -SessionId $sessionId
     $fileListPlan.fileList | Format-Table -AutoSize | out-string | write-debug
+    $fileListImages=get-filelist -Path '/bible_pod/images' -SessionId $sessionId
     $fileListImages.fileList | Format-Table -AutoSize | out-string | write-debug
-  
+
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
         get-file -file $_
     }
@@ -66,8 +66,8 @@ function main() {
 }
 
 ################################# SCRIPT #################################
-# $DebugPreference = "SilentlyContinue"
 $DebugPreference = "Continue"
+$DebugPreference = "SilentlyContinue"
 
 write-output "Date: $(get-date)"
 

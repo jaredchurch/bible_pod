@@ -105,20 +105,16 @@ function get-filelist() {
     # Get & Structure FileList
     $fileList = Invoke-WebRequest -Uri "$($apiBaseURL)/folder/list.json/$sessionId/$directoryId" -Method Get
 
-    write-debug "FileList: $($fileList)"
+    # write-debug "FileList: $(($fileList | convertfrom-json).Files | out-string)"
     # Extract file IDs and download links
-    $fileDetails = ($fileList | convertfrom-json).Files | ForEach-Object {
-        [PSCustomObject]@{
-            FileID = $_.FileId
-            Name = $_.Name
-            DownloadLink = $_.DownloadLink
-        }
-    }
+    $fileDetails = ($fileList | convertfrom-json).Files | select-object FileId,Name,DownloadLink,Size
 
     $retObject=[PSCustomObject]@{
         FolderId=$directoryId
         fileList=$fileDetails
     }
+
+    $retObject.fileList | out-string | write-debug
 
     return $retObject
 }

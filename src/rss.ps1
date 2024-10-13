@@ -71,21 +71,24 @@ function xml-footer () {
 function xml-Body () {
     param (
         $data,
-        [Int]$count
+        [Int]$count,
+        $links
     )
 
-    # $links | format-table
-    $link = ($links | Where-Object Name -eq $data.Chapter).DownloadLink
+    $fileInfo = ($links | Where-Object Name -eq $data.Chapter)
+    $fileInfo | format-table | out-string | write-debug
+    # $link = ($links | Where-Object Name -eq $data.Chapter).DownloadLink
+
 
     write-debug "$($data)"
     write-output @"
             <item>
                 <title>$($data.Chapter)</title>
-                <link>$($link)</link>
+                <link>$($fileInfo.DownloadLink)</link>
                 <itunes:author>Zondervan</itunes:author>
                 <description>$($data.Chapter)</description>
                 <itunes:summary>$($data.Chapter)</itunes:summary>
-                <enclosure url="$($link)" length="filesize-in-bites" type="audio/mpeg" />
+                <enclosure url="$($fileInfo.DownloadLink)" length="$($fileInfo.Size)" type="audio/mpeg" />
                 <guid>$((get-date).Year)-$($data.current)-$($data.Chapter)</guid>
                 <pubDate>$(get-publication-date -DayOfYear $data.current -seconds $count)</pubDate>
                 <itunes:keywords>$($data.Chapter)</itunes:keywords>
@@ -120,7 +123,7 @@ function generate-rss-xml() {
             $dataFilterSort[-10..-1] | write-debug
             $dataFilterSort | ForEach-Object {
                 $global:i++
-                xml-body -data $_ -count $i
+                xml-body -data $_ -count $i -links $links
             }
             xml-footer
         } | out-file -encoding ascii "./tniv_$($_).xml"
