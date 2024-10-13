@@ -51,7 +51,7 @@ function main() {
     $fileListImages.fileList | Format-Table -AutoSize | out-string | write-debug
 
     $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
-        get-file -file $_
+        get-file2 -file $_ -SessionId $sessionId
     }
 
     close-session $sessionId | write-debug
