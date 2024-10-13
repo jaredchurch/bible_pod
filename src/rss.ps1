@@ -1,0 +1,134 @@
+#######################################################################
+#
+#   FileName: rss.ps1
+#
+#   Purpose:
+#       Updates RSS Feed
+#
+#######################################################################
+
+$apiBaseURL="https://dev.opendrive.com/api/v1"
+$webBaseURL="https://www.opendrive.com"
+$webDavBaseURL="https://webdav.opendrive.com"
+
+
+
+function get-publication-date() {
+    param (
+        $DayOfYear,
+        $seconds
+    )
+
+    $date = ([datetime]::new(((get-date).Year),1,1).AddDays($DayOfYear -1).AddSeconds($seconds)).ToString("ddd, dd MMMM yyyy HH:mm:ss zzz")
+
+    return $date
+}
+
+function xml-header() {
+    param (
+        $vSection,
+        $image
+    )
+
+        Write-Output @"
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+
+        <atom:link href="$($webBaseURL)/bible_pod/rss" rel="self" type="application/rss+xml" />
+        <title>Bible - Zondervan TNIV $($vSection)</title>
+        <link>$($webBaseURL)/bible_pod/rss</link>
+        <description>This is a Zondervan TNIV $($vSection)</description>
+        <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
+        <language>en-us</language>
+        <copyright>Audio Copyright © Zondervan</copyright>
+        <itunes:subtitle></itunes:subtitle>
+        <itunes:author>Jared Church</itunes:author>
+        <itunes:summary>Bible $($vSection)</itunes:summary>
+        <itunes:owner>
+            <itunes:name>Jared Church</itunes:name>
+            <itunes:email>pjaredchurch@gmail.com</itunes:email>
+        </itunes:owner>
+        <itunes:image href="$($image)" />
+"@
+
+# <itunes:category text="Category1" />
+# <itunes:category text="Category2">
+#     <itunes:category text="Subcategory" />
+# </itunes:category>
+
+}
+
+function xml-footer () {
+    write-output @"
+
+        <itunes:explicit>no</itunes:explicit>
+    </channel>
+</rss>
+"@
+}
+
+function xml-Body () {
+    param (
+        $data,
+        [Int]$count
+    )
+
+    # $links | format-table
+    $link = ($links | Where-Object Name -eq $data.Chapter).DownloadLink
+
+    write-debug "$($data)"
+    write-output @"
+            <item>
+                <title>$($data.Chapter)</title>
+                <link>$($link)</link>
+                <itunes:author>Zondervan</itunes:author>
+                <description>$($data.Chapter)</description>
+                <itunes:summary>$($data.Chapter)</itunes:summary>
+                <enclosure url="$($link)" length="filesize-in-bites" type="audio/mpeg" />
+                <guid>$((get-date).Year)-$($data.current)-$($data.Chapter)</guid>
+                <pubDate>$(get-publication-date -DayOfYear $data.current -seconds $count)</pubDate>
+                <itunes:keywords>$($data.Chapter)</itunes:keywords>
+                <category>Podcasts</category>
+                <itunes:explicit>no</itunes:explicit>
+            </item>
+"@
+}
+
+
+
+function generate-rss-xml() {
+    param (
+        $plan,
+        $links,
+        $images
+    )
+
+
+    $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current)
+    $data | ForEach-Object { $_.current = [int]$_.current }
+
+    # $data[0..10] | format-table
+    $global:i=0
+
+
+    $data.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
+        $image=$images | where-object Name -like "*$($_).jpg"
+        & {
+            xml-header -vSection $_ -image $image.DownloadLink
+            $dataFilterSort = $data | where-object Category -eq $_ | where-object current -le ((get-date).DayOfYear) | sort-object current,Chapter
+            $dataFilterSort[-10..-1] | write-debug
+            $dataFilterSort | ForEach-Object {
+                $global:i++
+                xml-body -data $_ -count $i
+            }
+            xml-footer
+        } | out-file -encoding ascii "./tniv_$($_).xml"
+    }
+
+    $data.Category | Select-Object -Unique | write-debug
+
+}
+
+
+### End of File
