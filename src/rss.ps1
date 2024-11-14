@@ -142,10 +142,18 @@ function generate-rss-xml() {
 
     $data.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
         $image=$images | where-object Name -like "*$($_).jpg"
+
+        $dayOfYearToday=(get-date).DayOfYear
+        $allInCategory=$data | where-object Category -eq $_
+        $dataFilterSort = $allInCategory | where-object current -le $dayOfYearToday | sort-object current,Chapter
+        $dataFilterSort[-10..-1] | write-debug
+        $latestDayInData=($allInCategory.current | foreach-object { [int]$_ } | sort-object)[-1]
+        "{0,10} {1,-10} {2} {3}" -f "$($_):","$($dataFilterSort.count)/$($allInCategory.count)","Today/Last Day:","$($dayOfYearToday)/$($latestDayInData)"
+
+        # test if new data & only generate if necessary - not that this likely needs handling
+        # of the upload if the file isn't generated
         & {
             xml-header -vSection $_ -image $image.DownloadLink
-            $dataFilterSort = $data | where-object Category -eq $_ | where-object current -le ((get-date).DayOfYear) | sort-object current,Chapter
-            $dataFilterSort[-10..-1] | write-debug
             $dataFilterSort | ForEach-Object {
                 $global:i++
                 xml-body -data $_ -count $i -links $links
