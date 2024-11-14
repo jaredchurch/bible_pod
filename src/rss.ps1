@@ -142,10 +142,14 @@ function generate-rss-xml() {
 
     $data.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
         $image=$images | where-object Name -like "*$($_).jpg"
+
+        $allInCategory=$data | where-object Category -eq $_
+        $dataFilterSort = $allInCategory | where-object current -le ((get-date).DayOfYear) | sort-object current,Chapter
+        $dataFilterSort[-10..-1] | write-debug
+        write-output "$($_):$($dataFilterSort.count)/$($allInCategory.count)"
+
         & {
             xml-header -vSection $_ -image $image.DownloadLink
-            $dataFilterSort = $data | where-object Category -eq $_ | where-object current -le ((get-date).DayOfYear) | sort-object current,Chapter
-            $dataFilterSort[-10..-1] | write-debug
             $dataFilterSort | ForEach-Object {
                 $global:i++
                 xml-body -data $_ -count $i -links $links
