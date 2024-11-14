@@ -50,7 +50,7 @@ $rssItem=@"
                 <title>{{title}}</title>
                 <link>{{link}}</link>
                 <itunes:author>Zondervan</itunes:author>
-                <description><![CDATA[{{description}}<br /><br /><br />&copy; 2005 Zondervan]]></description>
+                <description><![CDATA[{{description}} <br /><br /><br />&copy; 2005 Zondervan]]></description>
                 <itunes:summary>{{summary}}</itunes:summary>
                 <enclosure url="{{link}}" length="{{size-bytes}}" type="audio/mpeg" />
                 <guid>{{guid}}</guid>
