@@ -32,7 +32,8 @@
 			"extensions": [
 				"ms-vscode.powershell",
 				"ms-vscode-remote.remote-containers",
-				"GitHub.codespaces"
+				"GitHub.codespaces",
+				"github.vscode-github-actions"
 			]
 		}
 	}
