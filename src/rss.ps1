@@ -152,7 +152,6 @@ function generate-rss-xml() {
         $dataFilterSort = $allInCategory | where-object current -le $dayOfYearToday | sort-object current,Chapter
 
         "Number of Chapters: $($dataFilterSort.Length)" | write-debug
-        $dataFilterSort[-10..-1] | write-debug
         $latestDayInData=($allInCategory.current | foreach-object { [int]$_ } | sort-object)[-1]
         "{0,10} {1,-10} {2} {3}" -f "$($_):","$($dataFilterSort.count)/$($allInCategory.count)","Today/Last Day:","$($dayOfYearToday)/$($latestDayInData)"
 
