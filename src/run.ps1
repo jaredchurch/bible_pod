@@ -8,7 +8,8 @@
 #######################################################################
 
 param (
-    [switch]$noUpload
+    [switch]$noUpload,
+    [string]$DebugPreference = 'SilentlyContinue'
 )
 
 . $PSScriptRoot/opendrive.ps1
@@ -67,9 +68,6 @@ function main() {
 }
 
 ################################# SCRIPT #################################
-$DebugPreference = "Continue"
-$DebugPreference = "SilentlyContinue"
-
 write-output "Date: $(get-date)"
 
 try {

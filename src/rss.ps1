@@ -129,7 +129,7 @@ function generate-rss-xml() {
         $links,
         $images
     )
-
+    "generate-rss-xml: Start" | write-debug
 
     $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current,'Length Seconds')
     $data[0..5] | format-table | out-string | write-debug
@@ -141,12 +141,17 @@ function generate-rss-xml() {
     $global:i=0
 
     $data.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
+        "Process Category: $($_)" | write-debug
         $image=$images | where-object Name -like "*$($_).jpg"
 
         $dayOfYearToday=(get-date).DayOfYear
         $allInCategory=$data | where-object Category -eq $_
+        "`$allInCategory:" | write-debug
+        $allInCategory[0..1] | format-table | out-string | write-debug
+        $allInCategory[-2..-1] | format-table | out-string | write-debug
         $dataFilterSort = $allInCategory | where-object current -le $dayOfYearToday | sort-object current,Chapter
-        $dataFilterSort[-10..-1] | write-debug
+
+        "Number of Chapters: $($dataFilterSort.Length)" | write-debug
         $latestDayInData=($allInCategory.current | foreach-object { [int]$_ } | sort-object)[-1]
         "{0,10} {1,-10} {2} {3}" -f "$($_):","$($dataFilterSort.count)/$($allInCategory.count)","Today/Last Day:","$($dayOfYearToday)/$($latestDayInData)"
 
