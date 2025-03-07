@@ -14,6 +14,7 @@ param (
 
 . $PSScriptRoot/opendrive.ps1
 . $PSScriptRoot/rss.ps1
+. $PSScriptRoot/whole_bible.ps1
 
 
 function main() {
@@ -59,6 +60,7 @@ function main() {
     close-session $sessionId | write-debug
 
     generate-rss-xml -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
+    generate-xml-whole-bible -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
 
     # Upload rss feeds
     if ( -not $NoUpload ) {
