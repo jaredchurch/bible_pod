@@ -22,8 +22,10 @@ function generate-xml-whole-bible() {
     $data=$data | sort-object -Property 'Book Number','Chapter' -Unique
     $data[0..60] | out-string | write-debug
 
+    $global:i=1440
     $data.Category | Select-Object -Unique | where-object { $_ -ne "" } | foreach-object {
         $allInCategory=$data | where-object Category -eq $_
+        $image=$images | where-object Name -like "*$($_).jpg"
 
         & {
             xml-header -vSection $_ -image $image.DownloadLink
@@ -49,7 +51,7 @@ function generate-xml-whole-bible() {
     $UserName=$env:OPENDRIVE_USERNAME
     $Password=$env:OPENDRIVE_PASSWORD
 
-    # put-xml -USERNAME $UserName -PASSWORD $Password -fileList $PutFiles
+    put-xml -USERNAME $UserName -PASSWORD $Password -fileList $PutFiles
 
 }
 
