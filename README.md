@@ -10,6 +10,8 @@ All the data for this is stored in OpenDrive.
 github stores the script and will execute daily on runner.
 
 ## Subscription
+Issue with redirhub.com, so have shifted to use http://app.short.io - Login with google
+
 Uses redirhub.com as a URL redirection service that allow a nice URL to point at the opendrive xml files for podcast subscription. Also means that if the file link on opendrive has to change then redirhub.com link can be repointed to the new opendrive location.
 
 ## How To Run in Testing
