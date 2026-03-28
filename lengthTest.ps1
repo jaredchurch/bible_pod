@@ -1,7 +1,4 @@
 param(
-    # [Parameter(Mandatory = $true, ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true)]
-    # [Alias("FullName")]
-    # $RssPath,
     [ValidateSet("SilentlyContinue","Continue","Inquire","Stop")]
     [string]$DebugPreference = $global:DebugPreference
 )
