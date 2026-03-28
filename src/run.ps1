@@ -9,6 +9,7 @@
 
 param (
     [switch]$noUpload,
+    [switch]$allYear = $false,
     [string]$DebugPreference = 'SilentlyContinue'
 )
 
@@ -58,7 +59,7 @@ function main() {
 
     close-session $sessionId | write-debug
 
-    generate-rss-xml -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
+    generate-rss-xml -allYear $allYear -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
 
     # Upload rss feeds
     if ( -not $NoUpload ) {
