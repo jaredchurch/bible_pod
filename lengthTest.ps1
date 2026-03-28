@@ -70,6 +70,7 @@ $summary = $allResults |
 
         [PSCustomObject]@{
             Date          = $_.Name
+            DOY           = (get-date $_.Name).DayOfYear
             TotalDuration = [TimeSpan]::FromTicks($totalTicks)
             Count         = ($_.Group | Measure-Object).Count
             Flag          = if ([TimeSpan]::FromTicks($totalTicks) -gt [TimeSpan]::FromMinutes(30)) { "Long" } else { "" }
