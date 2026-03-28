@@ -151,7 +151,7 @@ function generate-rss-xml() {
         $allInCategory[0..1] | format-table | out-string | write-debug
         $allInCategory[-2..-1] | format-table | out-string | write-debug
 
-        if ( $allYear ) {
+        if ( $allYear -eq $true ) {
             $dayOfYearToday=365
         }
         $dataFilterSort = $allInCategory | where-object current -le $dayOfYearToday | sort-object current,Chapter
