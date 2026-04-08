@@ -10,7 +10,8 @@
 param (
     [switch]$noUpload,
     [switch]$allYear = $false,
-    [string]$DebugPreference = 'SilentlyContinue'
+    [ValidateSet("SilentlyContinue","Continue","Inquire","Stop")]
+    [string]$DebugPreference = $global:DebugPreference
 )
 
 . $PSScriptRoot/opendrive.ps1
@@ -59,6 +60,8 @@ function main() {
 
     close-session $sessionId | write-debug
 
+
+    #$fileListMedia.fileList | Where-Object Name -like "*NT*" | format-table | write-debug
     generate-rss-xml -allYear $allYear -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
 
     # Upload rss feeds
