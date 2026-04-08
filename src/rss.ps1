@@ -107,7 +107,7 @@ function xml-Body () {
     $string=(
         "$($rssItem)" `
             -replace '{{title}}',$data.Chapter `
-            -replace '{{link}}',$fileInfo.DownloadLink `
+            -replace '{{link}}',$fileInfo.StreamingLink `
             -replace '{{description}}',$data.Chapter `
             -replace '{{summary}}',$data.Chapter `
             -replace '{{size-bytes}}',$fileInfo.Size `

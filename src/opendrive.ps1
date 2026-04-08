@@ -107,7 +107,7 @@ function get-filelist() {
 
     # write-debug "FileList: $(($fileList | convertfrom-json).Files | out-string)"
     # Extract file IDs and download links
-    $fileDetails = ($fileList | convertfrom-json).Files | select-object FileId,Name,DownloadLink,Size
+    $fileDetails = ($fileList | convertfrom-json).Files | select-object FileId,Name,StreamingLink,DownloadLink,Size
 
     $retObject=[PSCustomObject]@{
         FolderId=$directoryId
