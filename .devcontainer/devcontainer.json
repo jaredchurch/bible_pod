@@ -17,7 +17,7 @@
 		"ghcr.io/devcontainers/features/powershell:2.0.1": {}
 	},
 
-	"postCreateCommand": "sudo chsh vscode -s \"$(which pwsh)\" && curl -fsSL https://github.com/cli/cli/releases/download/v2.34.0/gh_2.34.0_linux_amd64.tar.gz -o ghcli.tar.gz && tar -xzf ghcli.tar.gz && sudo mv gh_2.34.0_linux_amd64/bin/gh /usr/local/bin/gh && rm -rf ghcli.tar.gz gh_2.34.0_linux_amd64",
+	"postCreateCommand": "chmod u+x ./.devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
 
 	// Configure tool-specific properties.
 	"customizations": {
