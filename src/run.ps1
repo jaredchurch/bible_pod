@@ -18,6 +18,42 @@ param (
 . $PSScriptRoot/opendrive.ps1
 . $PSScriptRoot/rss.ps1
 
+function Get-PlanData() {
+    param(
+        [string]$UserName,
+        [string]$Password
+    )
+
+    $planCSV="bibleListenPlan.csv"
+
+    $sessionId=open-session -UserName $UserName -Password $Password
+
+    $fileListMedia=get-filelist -Path '/bible_pod/media' -SessionId $sessionId
+    $fileListPlan=get-filelist -Path '/bible_pod' -SessionId $sessionId
+    $fileListImages=get-filelist -Path '/bible_pod/images' -SessionId $sessionId
+
+    $fileListPlan.fileList | Where-Object Name -eq $planCSV | out-string | write-debug
+    $fileListPlan.fileList | Where-Object Name -eq $planCSV | foreach {
+        get-file -file $_ -SessionId $sessionId
+    }
+
+    close-session $sessionId | write-debug
+
+    $plan=(import-csv "./$($planCSV)" | where-object current -ne '' | select-object Chapter,Category,current,'Length Seconds')
+
+    $plan | ForEach-Object {
+        $_.current = [int]$_.current
+        $_.'Length Seconds' = [int]$_.'Length Seconds'
+    }
+
+    return @{
+        plan=$plan
+        links=$fileListMedia.fileList
+        images=$fileListImages.fileList
+    }
+}
+
+
 
 function main() {
     param (
@@ -45,31 +81,10 @@ function main() {
     )
 
 
-    $sessionId=open-session -UserName $UserName -Password $Password
+    $data = Get-PlanData -UserName $UserName -Password $Password
 
-    $fileListMedia=get-filelist -Path '/bible_pod/media' -SessionId $sessionId
-    $fileListPlan=get-filelist -Path '/bible_pod' -SessionId $sessionId
-    $fileListImages=get-filelist -Path '/bible_pod/images' -SessionId $sessionId
 
-    $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | out-string | write-debug
-    $fileListPlan.fileList | Where-Object Name -eq "bibleListenPlan.csv" | foreach {
-        get-file -file $_ -SessionId $sessionId
-    }
-
-    close-session $sessionId | write-debug
-
-    $plan=(import-csv './bibleListenPlan.csv' | where-object current -ne '' | select-object Chapter,Category,current,'Length Seconds')
-
-    $data=@{
-        plan=$plan
-        links=$fileListMedia.fileList
-        images=$fileListImages.fileList
-    }
-
-    $data.plan | ForEach-Object {
-        $_.current = [int]$_.current
-        $_.'Length Seconds' = [int]$_.'Length Seconds'
-    }
+    $data | out-string | write-debug
 
     # Filter for Day of Year
     if ( $allYear -eq $false ) {
@@ -78,12 +93,20 @@ function main() {
         $dayOfYearToday=366
     }
 
-    $data.plan = $data.plan | where-object { $_.current -le $dayOfYearToday }
-    "Plan data: Day of Year: $($dayOfYearToday)" | write-debug
-    $data.plan[-5..-1] | format-table | out-string | write-debug
-    $data.plan[0..5] | format-table | out-string | write-debug
+    $global:i=0
 
-    generate-rss-xml -data $data
+    $data.plan.Category | Select-Object -Unique | write-debug
+    $data.plan.Category | Select-Object -Unique | where-object { $_ -ne "" } | ForEach-Object {
+        $inCategory=$data.plan | where-object { $_.current -le $dayOfYearToday } | where-object Category -eq $_
+
+        $data2=@{
+            category=$_
+            plan=$inCategory
+            links=$data.links
+            images=$data.images
+        }
+        generate-rss-xml -data $data2
+    }
 
     # Upload rss feeds
     if ( -not $NoUpload ) {

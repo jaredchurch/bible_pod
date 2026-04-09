@@ -129,10 +129,9 @@ function generate-rss-xml() {
     )
     "generate-rss-xml: Start" | write-debug
 
-    $global:i=0
 
     $data.plan.Category | Select-Object -Unique | write-debug
-    $data.plan.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
+    $data.plan.Category | Select-Object -Unique | where-object { $_ -ne "" } | ForEach-Object {
         "Process Category: $($_)" | write-debug
         $image=$data.images | where-object Name -like "*$($_).jpg"
 
