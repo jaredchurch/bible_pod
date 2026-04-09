@@ -9,10 +9,8 @@
 #
 #######################################################################
 
-# OpenDrive API and web base URLs for constructing download links
-$apiBaseURL="https://dev.opendrive.com/api/v1"
+# OpenDrive web base URLs for constructing download links
 $webBaseURL="https://www.opendrive.com"
-$webDavBaseURL="https://webdav.opendrive.com"
 
 # RSS XML footer template - closes the RSS document
 $rssFooter=@"

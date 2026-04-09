@@ -10,6 +10,10 @@
 #
 #######################################################################
 
+# OpenDrive API URLs
+$apiBaseURL="https://dev.opendrive.com/api/v1"
+$webDavBaseURL="https://webdav.opendrive.com"
+
 # Upload local XML files to OpenDrive server via WebDAV
 # Takes username, password, and list of files with local and remote paths
 function put-xml() {
