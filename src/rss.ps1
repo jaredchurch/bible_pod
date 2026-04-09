@@ -139,22 +139,21 @@ function generate-rss-xml() {
         "Process Category: $($_)" | write-debug
         $image=$images | where-object Name -like "*$($_).jpg"
 
-        $allInCategory=$data | where-object Category -eq $_
-        "`$allInCategory:" | write-debug
-        $allInCategory[0..1] | format-table | out-string | write-debug
-        $allInCategory[-2..-1] | format-table | out-string | write-debug
+        $inCategory=$data | where-object Category -eq $_
+        "`$inCategory:" | write-debug
+        $inCategory[0..1] | format-table | out-string | write-debug
+        $inCategory[-2..-1] | format-table | out-string | write-debug
 
-        $dataFilterSort = $allInCategory | sort-object current,Chapter
+        $dataSorted = $inCategory | sort-object current,Chapter
 
-        "Number of Chapters: $($dataFilterSort.Length)" | write-debug
-        $latestDayInData=($allInCategory.current | foreach-object { [int]$_ } | sort-object)[-1]
-        "{0,10} {1,-10}" -f "$($_):","$($dataFilterSort.count)"
+        "Number of Chapters: $($dataSorted.Length)" | write-debug
+        "{0,10} {1,-10}" -f "$($_):","$($dataSorted.count)"
 
         # test if new data & only generate if necessary - not that this likely needs handling
         # of the upload if the file isn't generated
         & {
             xml-header -vSection $_ -image $image.DownloadLink
-            $dataFilterSort | ForEach-Object {
+            $dataSorted | ForEach-Object {
                 $global:i++
                 xml-body -data $_ -count $i -links $links
             }
