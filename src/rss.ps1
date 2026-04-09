@@ -3,14 +3,18 @@
 #   FileName: rss.ps1
 #
 #   Purpose:
-#       Updates RSS Feed
+#       RSS XML generation for Bible Podcast feeds.
+#       Defines templates and functions for creating iTunes-compatible
+#       podcast RSS feeds from Bible listening plan data.
 #
 #######################################################################
 
+# OpenDrive API and web base URLs for constructing download links
 $apiBaseURL="https://dev.opendrive.com/api/v1"
 $webBaseURL="https://www.opendrive.com"
 $webDavBaseURL="https://webdav.opendrive.com"
 
+# RSS XML footer template - closes the RSS document
 $rssFooter=@"
 
         <itunes:explicit>no</itunes:explicit>
@@ -18,6 +22,8 @@ $rssFooter=@"
 </rss>
 "@
 
+# RSS XML header template - defines channel metadata
+# Uses placeholders for dynamic values: {{webBaseURL}}, {{section}}, {{image}}
 $rssHeader=@"
 <?xml version="1.0" encoding="utf-8"?>
 <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
@@ -39,12 +45,15 @@ $rssHeader=@"
         </itunes:owner>
         <itunes:image href="{{image}}" />
 "@
+# Example of iTunes category hierarchy (currently commented out)
 # <itunes:category text="Category1" />
 # <itunes:category text="Category2">
 #     <itunes:category text="Subcategory" />
 # </itunes:category>
 
-
+# RSS item template - represents a single podcast episode
+# Placeholders: {{title}}, {{link}}, {{description}}, {{summary}},
+#               {{size-bytes}}, {{guid}}, {{pubDate}}, {{keywords}}, {{duration}}
 $rssItem=@"
             <item>
                 <title>{{title}}</title>
@@ -64,6 +73,8 @@ $rssItem=@"
 
 
 
+# Calculates the publication date for an RSS item based on day of year and seconds
+# Uses the current year, starting from Jan 1, then adds the day offset and time in seconds
 function get-publication-date() {
     param (
         $DayOfYear,
@@ -75,6 +86,8 @@ function get-publication-date() {
     return $date
 }
 
+# Generates the XML header for an RSS feed
+# Replaces placeholders with the category section name and podcast cover image URL
 function xml-header() {
     param (
         $vSection,
@@ -90,10 +103,13 @@ function xml-header() {
 }
 
 
+# Outputs the fixed RSS XML footer
 function xml-footer () {
     write-output $rssFooter
 }
 
+# Generates a single RSS item entry from plan data and file information
+# Matches the chapter name to find the corresponding media file details
 function xml-Body () {
     param (
         $data,
@@ -101,9 +117,11 @@ function xml-Body () {
         $links
     )
 
+    # Find the media file matching this chapter/verse
     $fileInfo = ($links | Where-Object Name -eq $data.Chapter)
     $fileInfo | format-table | out-string | write-debug
 
+    # Replace all placeholders in the RSS item template with actual values
     $string=(
         "$($rssItem)" `
             -replace '{{title}}',$data.Chapter `
@@ -123,6 +141,8 @@ function xml-Body () {
 
 
 
+# Main function to generate RSS XML files for each category in the plan
+# Iterates through unique categories, builds the XML structure, and writes to files
 function generate-rss-xml() {
     param (
         $data
@@ -130,23 +150,28 @@ function generate-rss-xml() {
     "generate-rss-xml: Start" | write-debug
 
 
+    # Process each unique category in the plan data
     $data.plan.Category | Select-Object -Unique | write-debug
     $data.plan.Category | Select-Object -Unique | where-object { $_ -ne "" } | ForEach-Object {
         "Process Category: $($_)" | write-debug
+
+        # Find the cover image for this category
         $image=$data.images | where-object Name -like "*$($_).jpg"
 
+        # Filter plan entries for this category only
         $inCategory=$data.plan | where-object Category -eq $_
         "`$inCategory:" | write-debug
         $inCategory[0..1] | format-table | out-string | write-debug
         $inCategory[-2..-1] | format-table | out-string | write-debug
 
+        # Sort entries by day number (current) then by chapter name
         $dataSorted = $inCategory | sort-object current,Chapter
 
         "Number of Chapters: $($dataSorted.Length)" | write-debug
         "{0,10} {1,-10}" -f "$($_):","$($dataSorted.count)"
 
-        # test if new data & only generate if necessary - not that this likely needs handling
-        # of the upload if the file isn't generated
+        # Build the complete RSS XML and write to file
+        # Outputs: tniv_<Category>.xml (e.g., tniv_NT.xml, tniv_OT.xml)
         & {
             xml-header -vSection $_ -image $image.DownloadLink
             $dataSorted | ForEach-Object {
