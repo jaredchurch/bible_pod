@@ -125,21 +125,18 @@ function xml-Body () {
 
 function generate-rss-xml() {
     param (
-        $plan,
-        $links,
-        $images
+        $data
     )
     "generate-rss-xml: Start" | write-debug
 
-    $data=$plan
-
     $global:i=0
 
-    $data.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
+    $data.plan.Category | Select-Object -Unique | write-debug
+    $data.plan.Category | Select-Object -Unique | where-object { $_ -ne "" }| ForEach-Object {
         "Process Category: $($_)" | write-debug
-        $image=$images | where-object Name -like "*$($_).jpg"
+        $image=$data.images | where-object Name -like "*$($_).jpg"
 
-        $inCategory=$data | where-object Category -eq $_
+        $inCategory=$data.plan | where-object Category -eq $_
         "`$inCategory:" | write-debug
         $inCategory[0..1] | format-table | out-string | write-debug
         $inCategory[-2..-1] | format-table | out-string | write-debug
@@ -155,7 +152,7 @@ function generate-rss-xml() {
             xml-header -vSection $_ -image $image.DownloadLink
             $dataSorted | ForEach-Object {
                 $global:i++
-                xml-body -data $_ -count $i -links $links
+                xml-body -data $_ -count $i -links $data.links
             }
             xml-footer
         } | out-file -encoding ascii "./tniv_$($_).xml"

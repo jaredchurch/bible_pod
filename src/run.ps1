@@ -60,28 +60,30 @@ function main() {
 
     $plan=(import-csv './bibleListenPlan.csv' | where-object current -ne '' | select-object Chapter,Category,current,'Length Seconds')
 
+    $data=@{
+        plan=$plan
+        links=$fileListMedia.fileList
+        images=$fileListImages.fileList
+    }
+
+    $data.plan | ForEach-Object {
+        $_.current = [int]$_.current
+        $_.'Length Seconds' = [int]$_.'Length Seconds'
+    }
+
     # Filter for Day of Year
     if ( $allYear -eq $false ) {
         $dayOfYearToday=(get-date).DayOfYear
     } else {
         $dayOfYearToday=366
     }
-    $plan = $plan | where-object { [int]$_.current -le $dayOfYearToday }
+
+    $data.plan = $data.plan | where-object { $_.current -le $dayOfYearToday }
     "Plan data: Day of Year: $($dayOfYearToday)" | write-debug
-    $plan[-5..-1] | format-table | out-string | write-debug
-    $plan[0..5] | format-table | out-string | write-debug
+    $data.plan[-5..-1] | format-table | out-string | write-debug
+    $data.plan[0..5] | format-table | out-string | write-debug
 
-    $plan | ForEach-Object {
-        $_.current = [int]$_.current
-        $_.'Length Seconds' = [int]$_.'Length Seconds'
-    }
-
-    $plan = $plan | where-object { $_.current -le $dayOfYearToday }
-    "Plan data: Day of Year: $($dayOfYearToday)" | write-debug
-    $plan[-5..-1] | format-table | out-string | write-debug
-    $plan[0..5] | format-table | out-string | write-debug
-
-    generate-rss-xml -plan $plan -links $fileListMedia.fileList -images $fileListImages.fileList
+    generate-rss-xml -data $data
 
     # Upload rss feeds
     if ( -not $NoUpload ) {
