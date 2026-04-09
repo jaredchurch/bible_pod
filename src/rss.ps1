@@ -141,32 +141,20 @@ function xml-Body () {
 
 
 
-# Main function to generate RSS XML files for each category in the plan
-# Iterates through unique categories, builds the XML structure, and writes to files
+# Main function to generate RSS XML files
 function generate-rss-xml() {
     param (
         $data
     )
     "generate-rss-xml: Start" | write-debug
 
-    # Debug: output
-    "`$data.plan:" | write-debug
-    $data.plan[0..1] | format-table | out-string | write-debug
-    $data.plan[-2..-1] | format-table | out-string | write-debug
-
-
     # Build the complete RSS XML
-    & {
-        xml-header -vSection $data.category -image $data.image.DownloadLink
-        $data.plan | ForEach-Object {
-            $global:i++
-            xml-body -data $_ -count $i -links $data.links
-        }
-        xml-footer
+    xml-header -vSection $data.category -image $data.image.DownloadLink
+    $data.plan | ForEach-Object {
+        $global:i++
+        xml-body -data $_ -count $i -links $data.links
     }
-
-    $data.Category | Select-Object -Unique | write-debug
-
+    xml-footer
 }
 
 
