@@ -149,37 +149,23 @@ function generate-rss-xml() {
     )
     "generate-rss-xml: Start" | write-debug
 
+    # Sort entries by day number (current) then by chapter name
+    $dataSorted = $data.plan | sort-object current,Chapter
 
-    # Process each unique category in the plan data
-    $data.plan.Category | Select-Object -Unique | write-debug
-    $data.plan.Category | Select-Object -Unique | where-object { $_ -ne "" } | ForEach-Object {
-        "Process Category: $($_)" | write-debug
+    # Debug: output
+    "`$dataSorted:" | write-debug
+    $dataSorted[0..1] | format-table | out-string | write-debug
+    $dataSorted[-2..-1] | format-table | out-string | write-debug
 
-        # Find the cover image for this category
-        $image=$data.images | where-object Name -like "*$($_).jpg"
 
-        # Filter plan entries for this category only
-        $inCategory=$data.plan | where-object Category -eq $_
-        "`$inCategory:" | write-debug
-        $inCategory[0..1] | format-table | out-string | write-debug
-        $inCategory[-2..-1] | format-table | out-string | write-debug
-
-        # Sort entries by day number (current) then by chapter name
-        $dataSorted = $inCategory | sort-object current,Chapter
-
-        "Number of Chapters: $($dataSorted.Length)" | write-debug
-        "{0,10} {1,-10}" -f "$($_):","$($dataSorted.count)"
-
-        # Build the complete RSS XML and write to file
-        # Outputs: tniv_<Category>.xml (e.g., tniv_NT.xml, tniv_OT.xml)
-        & {
-            xml-header -vSection $_ -image $image.DownloadLink
-            $dataSorted | ForEach-Object {
-                $global:i++
-                xml-body -data $_ -count $i -links $data.links
-            }
-            xml-footer
-        } | out-file -encoding ascii "./tniv_$($_).xml"
+    # Build the complete RSS XML
+    & {
+        xml-header -vSection $data.category -image $data.image.DownloadLink
+        $dataSorted | ForEach-Object {
+            $global:i++
+            xml-body -data $_ -count $i -links $data.links
+        }
+        xml-footer
     }
 
     $data.Category | Select-Object -Unique | write-debug

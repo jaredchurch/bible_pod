@@ -110,11 +110,11 @@ function main() {
 
     # Determine day of year filter
     # By default, only process entries up to today's day of year
-    # With -allYear flag, process all 366 days
+    # With -allYear flag, process all days (day of year is always < 367)
     if ( $allYear -eq $false ) {
         $dayOfYearToday=(get-date).DayOfYear
     } else {
-        $dayOfYearToday=366
+        $dayOfYearToday=367
     }
 
 
@@ -124,17 +124,21 @@ function main() {
     # Process each category separately to generate individual RSS feeds
     $data.plan.Category | Select-Object -Unique | where-object { $_ -ne "" } | ForEach-Object {
         # Filter plan entries for current category that have already passed
-        $inCategory=$data.plan | where-object { $_.current -le $dayOfYearToday } | where-object Category -eq $_
+        $plan=$data.plan | where-object { $_.current -le $dayOfYearToday } | where-object Category -eq $_
+        $image=$data.images | where-object Name -like "*$($_).jpg"
 
         # Create data object for this category's RSS generation
         $data2=@{
             category=$_
-            plan=$inCategory
+            plan=$plan
             links=$data.links
-            images=$data.images
+            image=$image
         }
+        "Number of Chapters: $($data2.plan.Length)" | write-debug
+        "{0,10} {1,-10}" -f "$($data2.category):","$($data2.plan.count)"
+
         # Generate RSS XML file for this category
-        generate-rss-xml -data $data2
+        generate-rss-xml -data $data2  | out-file -encoding ascii "./tniv_$($_).xml"
     }
 
     # Upload generated RSS XML files to OpenDrive server
