@@ -149,19 +149,16 @@ function generate-rss-xml() {
     )
     "generate-rss-xml: Start" | write-debug
 
-    # Sort entries by day number (current) then by chapter name
-    $dataSorted = $data.plan | sort-object current,Chapter
-
     # Debug: output
-    "`$dataSorted:" | write-debug
-    $dataSorted[0..1] | format-table | out-string | write-debug
-    $dataSorted[-2..-1] | format-table | out-string | write-debug
+    "`$data.plan:" | write-debug
+    $data.plan[0..1] | format-table | out-string | write-debug
+    $data.plan[-2..-1] | format-table | out-string | write-debug
 
 
     # Build the complete RSS XML
     & {
         xml-header -vSection $data.category -image $data.image.DownloadLink
-        $dataSorted | ForEach-Object {
+        $data.plan | ForEach-Object {
             $global:i++
             xml-body -data $_ -count $i -links $data.links
         }

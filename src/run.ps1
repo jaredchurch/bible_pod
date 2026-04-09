@@ -130,7 +130,7 @@ function main() {
         # Create data object for this category's RSS generation
         $data2=@{
             category=$_
-            plan=$plan
+            plan=$plan | sort-object current,Chapter
             links=$data.links
             image=$image
         }
