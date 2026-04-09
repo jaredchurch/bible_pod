@@ -1,3 +1,4 @@
+#!/opt/microsoft/powershell/7-lts/pwsh
 #######################################################################
 #
 #   FileName: run.ps1
@@ -60,9 +61,30 @@ function main() {
 
     close-session $sessionId | write-debug
 
+    $plan=(import-csv './bibleListenPlan.csv' | where-object current -ne '' | select-object Chapter,Category,current,'Length Seconds')
 
-    #$fileListMedia.fileList | Where-Object Name -like "*NT*" | format-table | write-debug
-    generate-rss-xml -allYear $allYear -plan "./bibleListenPlan.csv" -links $fileListMedia.fileList -images $fileListImages.fileList
+    # Filter for Day of Year
+    if ( $allYear -eq $false ) {
+        $dayOfYearToday=(get-date).DayOfYear
+    } else {
+        $dayOfYearToday=366
+    }
+    $plan = $plan | where-object { [int]$_.current -le $dayOfYearToday }
+    "Plan data: Day of Year: $($dayOfYearToday)" | write-debug
+    $plan[-5..-1] | format-table | out-string | write-debug
+    $plan[0..5] | format-table | out-string | write-debug
+
+    $plan | ForEach-Object {
+        $_.current = [int]$_.current
+        $_.'Length Seconds' = [int]$_.'Length Seconds'
+    }
+
+    $plan = $plan | where-object { $_.current -le $dayOfYearToday }
+    "Plan data: Day of Year: $($dayOfYearToday)" | write-debug
+    $plan[-5..-1] | format-table | out-string | write-debug
+    $plan[0..5] | format-table | out-string | write-debug
+
+    generate-rss-xml -plan $plan -links $fileListMedia.fileList -images $fileListImages.fileList
 
     # Upload rss feeds
     if ( -not $NoUpload ) {

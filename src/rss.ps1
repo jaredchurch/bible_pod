@@ -127,17 +127,11 @@ function generate-rss-xml() {
     param (
         $plan,
         $links,
-        $images,
-        [string]$allYear
+        $images
     )
     "generate-rss-xml: Start" | write-debug
 
-    $data=(import-csv $plan | Where-Object current -ne '' | select-object Chapter,Category,current,'Length Seconds')
-    $data[0..5] | format-table | out-string | write-debug
-    $data | ForEach-Object {
-        $_.current = [int]$_.current
-        $_.'Length Seconds' = [int]$_.'Length Seconds'
-    }
+    $data=$plan
 
     $global:i=0
 
@@ -145,20 +139,16 @@ function generate-rss-xml() {
         "Process Category: $($_)" | write-debug
         $image=$images | where-object Name -like "*$($_).jpg"
 
-        $dayOfYearToday=(get-date).DayOfYear
         $allInCategory=$data | where-object Category -eq $_
         "`$allInCategory:" | write-debug
         $allInCategory[0..1] | format-table | out-string | write-debug
         $allInCategory[-2..-1] | format-table | out-string | write-debug
 
-        if ( $allYear -eq $true ) {
-            $dayOfYearToday=365
-        }
-        $dataFilterSort = $allInCategory | where-object current -le $dayOfYearToday | sort-object current,Chapter
+        $dataFilterSort = $allInCategory | sort-object current,Chapter
 
         "Number of Chapters: $($dataFilterSort.Length)" | write-debug
         $latestDayInData=($allInCategory.current | foreach-object { [int]$_ } | sort-object)[-1]
-        "{0,10} {1,-10} {2} {3}" -f "$($_):","$($dataFilterSort.count)/$($allInCategory.count)","Today/Last Day:","$($dayOfYearToday)/$($latestDayInData)"
+        "{0,10} {1,-10}" -f "$($_):","$($dataFilterSort.count)"
 
         # test if new data & only generate if necessary - not that this likely needs handling
         # of the upload if the file isn't generated
