@@ -14,7 +14,7 @@
 			"upgradePackages": "false",
 			"nonFreePackages": "true"
 		},
-		"ghcr.io/devcontainers/features/powershell:2.0.1": {}
+		"ghcr.io/devcontainers/features/powershell:2.0.2": {}
 	},
 
 	"postCreateCommand": "chmod u+x ./.devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
