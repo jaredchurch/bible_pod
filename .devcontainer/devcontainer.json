@@ -3,21 +3,15 @@
 {
 	"name": "PowerShell",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/powershell:lts-debian-11",
+	"image": "ghcr.io/jaredchurch/base:v3",
 	"containerEnv": {
 		"TZ": "Pacific/Auckland"
 	},
-	"features": {
-		"ghcr.io/devcontainers/features/common-utils:2": {
-			"installZsh": "true",
-			"username": "vscode",
-			"upgradePackages": "false",
-			"nonFreePackages": "true"
-		},
-		"ghcr.io/devcontainers/features/powershell:2.0.2": {}
-	},
+	//"features": {
+	//	"./features/opencode": {}
+	//},
 
-	"postCreateCommand": "chmod u+x ./.devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
+	// "postCreateCommand": "chmod u+x ./.devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
 
 	// Configure tool-specific properties.
 	"customizations": {
