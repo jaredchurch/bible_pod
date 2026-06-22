@@ -1,15 +1,12 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/powershell
 {
-	"name": "PowerShell",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"name": "Bible POD",
 	"image": "ghcr.io/jaredchurch/base:v3",
 	"containerEnv": {
 		"TZ": "Pacific/Auckland"
 	},
-	//"features": {
-	//	"./features/opencode": {}
-	//},
+	"features": {
+		"./features/opencode": {}
+	},
 
 	// "postCreateCommand": "chmod u+x ./.devcontainer/post-create.sh && ./.devcontainer/post-create.sh",
 
