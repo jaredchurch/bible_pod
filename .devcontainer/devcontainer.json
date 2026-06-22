@@ -32,14 +32,14 @@
 		}
 	},
 	"secrets": {
-	"OPENDRIVE_USERNAME": {
-		"description": "Username for opendrive accounts.",
-		"documentationUrl": "https://www.opendrive.com"
-	},
-	"OPENDRIVE_PASSWORD": {
-		"description": "Password for opendrive account.",
-		"documentationUrl": "https://www.opendrive.com"
-	}
+		"OPENDRIVE_USERNAME": {
+			"description": "Username for opendrive accounts.",
+			"documentationUrl": "https://www.opendrive.com"
+		},
+		"OPENDRIVE_PASSWORD": {
+			"description": "Password for opendrive account.",
+			"documentationUrl": "https://www.opendrive.com"
+		}
 	}
 
 
