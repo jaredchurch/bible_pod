@@ -10,13 +10,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Secrets
+        uses: bitwarden/sm-action@v3.0.0
+        with:
+          access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            b299e4a7-305c-49d3-b4a7-b4710057e3de > OPENDRIVE_PASSWORD
+            40d1fdb2-bec1-4325-98dd-b4710057d5c2 > OPENDRIVE_USERNAME
+
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run PowerShell script
         run: |
           pwsh ./src/run.ps1
         env:
-          OPENDRIVE_USERNAME: ${{ secrets.OPENDRIVE_USERNAME }}
-          OPENDRIVE_PASSWORD: ${{ secrets.OPENDRIVE_PASSWORD }}
           TZ: Pacific/Auckland
