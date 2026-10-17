@@ -25,7 +25,7 @@ function generate-xml-whole-bible() {
     $global:i=1440
     $data.Category | Select-Object -Unique | where-object { $_ -ne "" } | foreach-object {
         $allInCategory=$data | where-object Category -eq $_
-        $image=$images | where-object Name -like "*$($_).jpg"
+        $image=get-cover-art -Images $images -Category $_
 
         & {
             xml-header -vSection $_ -image $image.DownloadLink
@@ -34,7 +34,7 @@ function generate-xml-whole-bible() {
                 xml-body -data $_ -count $i -links $links
             }
             xml-footer
-        } | out-file -encoding ascii "./tniv_$($_).xml"
+        } | out-file -encoding ascii "./$(get-feed-filename $_)"
     }
 
     # Deliberately no put-xml call: these feeds are published via GitHub Pages

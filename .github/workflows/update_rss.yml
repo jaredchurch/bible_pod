@@ -37,32 +37,53 @@ jobs:
           secrets: |
             b299e4a7-305c-49d3-b4a7-b4710057e3de > OPENDRIVE_PASSWORD
             40d1fdb2-bec1-4325-98dd-b4710057d5c2 > OPENDRIVE_USERNAME
+            2fdac243-dc08-4261-b72e-b4e6001f1523 > CLOUDFLARE_BIBLE_POD_ACCESS_KEY_ID
+            1889ca55-e8a1-4f30-b737-b4e6001f4477 > CLOUDFLARE_BIBLE_POD_SECRET_ACCESS_KEY
+            b6a969d6-37ce-4110-bad0-b4e6001ee9df > CLOUDFLARE_R2_URL
 
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
-      - name: Run PowerShell script
+      - name: Run PowerShell script - opendrive
         run: |
           pwsh ./src/run.ps1
           cp *.xml ./public
         env:
           TZ: Pacific/Auckland
 
+      # Runs after the OpenDrive copy above, which is what keeps the two sets
+      # apart: this script writes the same .xml filenames to the repo root, so
+      # the OpenDrive set has to be copied out of the way first. These feeds
+      # land in ./public/rss, served at /bible_pod/rss, which is the self-link
+      # run-cloudflare.ps1 emits.
+      - name: Run PowerShell script - Cloudflare
+        run: |
+          mkdir -p ./public/rss
+          pwsh ./src/run-cloudflare.ps1
+          cp *.xml ./public/rss/
+        env:
+          TZ: Pacific/Auckland
+
       # Guards against publishing a partial feed set. upload-pages-artifact
       # takes a whole directory rather than listing files, so a feed that
       # failed to generate would otherwise be deployed without it and any
-      # subscriber to that feed would 404 on the next run.
+      # subscriber to that feed would 404 on the next run. Both sets are checked
+      # where they are served from rather than in the repo root, since by now
+      # the root holds only the Cloudflare output: each script overwrites the
+      # previous one's files.
       - name: Verify all six feeds were generated
         run: |
           missing=0
-          for f in tniv_OT tniv_NT tniv_Psalms tniv_Proverbs tniv_WNT tniv_WOT; do
-            if [ ! -s "$f.xml" ]; then
-              echo "MISSING or empty: $f.xml" >&2
-              missing=1
-            fi
+          for dir in ./public ./public/rss; do
+            for f in tniv_OT tniv_NT tniv_Psalms tniv_Proverbs tniv_WNT tniv_WOT; do
+              if [ ! -s "$dir/$f.xml" ]; then
+                echo "MISSING or empty: $dir/$f.xml" >&2
+                missing=1
+              fi
+            done
+            ls -l "$dir"/tniv_*.xml
           done
           [ "$missing" -eq 0 ] || exit 1
-          ls -l tniv_*.xml
 
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

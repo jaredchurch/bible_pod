@@ -1,5 +1,11 @@
 # Code Style Guidelines
 
+## Publishing
+
+- The contents of `public/` are deployed as an artifact, and that artifact root is served at `https://jaredchurch.github.io/bible_pod/`. A file at `public/tniv_NT.xml` is therefore reachable at `https://jaredchurch.github.io/bible_pod/tniv_NT.xml`, not at the domain root.
+- `update_rss.yml` publishes two sets of feeds: the OpenDrive set in `public/` (`/bible_pod/tniv_*.xml`) and the Cloudflare R2 set in `public/rss/` (`/bible_pod/rss/tniv_*.xml`).
+- The self-link a feed advertises in its `atom:link` and `link` must match where that file is actually served from. `rss.ps1` builds it from `$webBaseURL` + `$feedPath`, and `run-cloudflare.ps1` overrides only the host.
+
 ## Headers
 
 All script and source files must include a header with:

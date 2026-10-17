@@ -12,6 +12,12 @@
 # OpenDrive web base URLs for constructing download links
 $webBaseURL="https://www.opendrive.com"
 
+# Path appended to the base URL for the channel and self links. Separate from the
+# host because the two backends serve the feeds from different places: OpenDrive
+# from /bible_pod/rss, GitHub Pages from the Pages site. A script that
+# dot-sources this file can override it after the fact.
+$feedPath="/bible_pod/rss"
+
 # RSS XML footer template - closes the RSS document
 $rssFooter=@"
 
@@ -21,15 +27,15 @@ $rssFooter=@"
 "@
 
 # RSS XML header template - defines channel metadata
-# Uses placeholders for dynamic values: {{webBaseURL}}, {{section}}, {{image}}
+# Uses placeholders for dynamic values: {{webBaseURL}}, {{feedPath}}, {{feedFile}}, {{section}}, {{image}}
 $rssHeader=@"
 <?xml version="1.0" encoding="utf-8"?>
 <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
 
-        <atom:link href="{{webBaseURL}}/bible_pod/rss" rel="self" type="application/rss+xml" />
+        <atom:link href="{{webBaseURL}}{{feedPath}}/{{feedFile}}" rel="self" type="application/rss+xml" />
         <title>Bible - Zondervan TNIV {{section}}</title>
-        <link>{{webBaseURL}}/bible_pod/rss</link>
+        <link>{{webBaseURL}}{{feedPath}}/{{feedFile}}</link>
         <description>This is a Zondervan TNIV {{section}}</description>
         <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
         <language>en-us</language>
@@ -71,6 +77,37 @@ $rssItem=@"
 
 
 
+# Escapes a value for use in XML element text or an attribute value.
+# Required for the enclosure and cover art URLs: an R2 pre-signed URL carries
+# '&' between its query parameters, and a raw '&' is a fatal parse error that
+# stops a feed rendering at all. OpenDrive links contained none, which is why
+# this was not needed before.
+function xml-escape() {
+    param (
+        $Text
+    )
+
+    return "$Text" `
+        -replace '&','&amp;' `
+        -replace '<','&lt;' `
+        -replace '>','&gt;' `
+        -replace '"','&quot;' `
+        -replace "'",'&apos;'
+}
+
+# Fills a template placeholder. String.Replace rather than -replace, because
+# -replace interprets '$' sequences in the replacement as substitution patterns
+# and would corrupt any value that happens to contain one.
+function xml-fill() {
+    param (
+        [string]$Template,
+        [string]$Placeholder,
+        $Value
+    )
+
+    return $Template.Replace($Placeholder, (xml-escape $Value))
+}
+
 # Calculates the publication date for an RSS item based on day of year and seconds
 # Uses the current year, starting from Jan 1, then adds the day offset and time in seconds
 function get-publication-date() {
@@ -84,6 +121,41 @@ function get-publication-date() {
     return $date
 }
 
+# Selects the cover art for a category.
+#
+# The exact name is preferred because a wildcard match cannot tell categories
+# apart: '*NT.jpg' also matches logo_WNT.jpg, so the feed ended up with two URLs
+# in a single href, which podcast clients resolve as neither. Falls back to the
+# wildcard for buckets that name their art differently.
+function get-cover-art() {
+    param (
+        $Images,
+        $Category
+    )
+
+    $exact=$Images | Where-Object Name -eq "logo_$($Category).jpg" | Select-Object -First 1
+    if ( $exact ) {
+        return $exact
+    }
+
+    $candidates=@($Images | Where-Object Name -like "*$($Category).jpg")
+    if ( $candidates.Count -gt 1 ) {
+        write-warning "More than one cover art matches '*$($Category).jpg' ($($candidates.Name -join ', ')); using the first"
+    }
+
+    return $candidates | Select-Object -First 1
+}
+
+# Name of the generated feed file for a section. Defined once because the file
+# written by each script and the URL advertised in its channel have to agree.
+function get-feed-filename() {
+    param (
+        $Section
+    )
+
+    return "tniv_$($Section).xml"
+}
+
 # Generates the XML header for an RSS feed
 # Replaces placeholders with the category section name and podcast cover image URL
 function xml-header() {
@@ -92,12 +164,14 @@ function xml-header() {
         $image
     )
 
-        write-output ("$($rssHeader)" `
-            -replace '{{webBaseURL}}',$webBaseURL `
-            -replace '{{section}}',$vSection `
-            -replace '{{image}}',$image
-        )
+        $xml = "$($rssHeader)"
+        $xml = xml-fill -Template $xml -Placeholder '{{webBaseURL}}' -Value $webBaseURL
+        $xml = xml-fill -Template $xml -Placeholder '{{feedPath}}' -Value $feedPath
+        $xml = xml-fill -Template $xml -Placeholder '{{feedFile}}' -Value (get-feed-filename $vSection)
+        $xml = xml-fill -Template $xml -Placeholder '{{section}}' -Value $vSection
+        $xml = xml-fill -Template $xml -Placeholder '{{image}}' -Value $image
 
+        write-output $xml
 }
 
 
@@ -119,21 +193,22 @@ function xml-Body () {
     $fileInfo = ($links | Where-Object Name -eq $data.Chapter)
     $fileInfo | format-table | out-string | write-debug
 
-    # Replace all placeholders in the RSS item template with actual values
-    $string=(
-        "$($rssItem)" `
-            -replace '{{title}}',$data.Chapter `
-            -replace '{{link}}',$fileInfo.StreamingLink `
-            -replace '{{description}}',$data.Chapter `
-            -replace '{{summary}}',$data.Chapter `
-            -replace '{{size-bytes}}',$fileInfo.Size `
-            -replace '{{guid}}', "$((get-date).Year)-$($data.current)-$($data.Chapter)" `
-            -replace '{{pubDate}}',(get-publication-date -DayOfYear $data.current -seconds $count) `
-            -replace '{{keywords}}',$data.Chapter `
-            -replace '{{duration}}',$data.'Length Seconds'
-    )
+    # Fill the template with actual values. The description is the one field
+    # left unescaped: it is interpolated inside a CDATA section, where a raw
+    # '&' or '<' is legal text, and escaping it would show the entities to
+    # listeners instead. Only the CDATA terminator itself needs neutralising.
+    $xml = "$($rssItem)"
+    $xml = xml-fill -Template $xml -Placeholder '{{title}}' -Value $data.Chapter
+    $xml = xml-fill -Template $xml -Placeholder '{{link}}' -Value $fileInfo.StreamingLink
+    $xml = xml-fill -Template $xml -Placeholder '{{summary}}' -Value $data.Chapter
+    $xml = xml-fill -Template $xml -Placeholder '{{size-bytes}}' -Value $fileInfo.Size
+    $xml = xml-fill -Template $xml -Placeholder '{{guid}}' -Value "$((get-date).Year)-$($data.current)-$($data.Chapter)"
+    $xml = xml-fill -Template $xml -Placeholder '{{pubDate}}' -Value (get-publication-date -DayOfYear $data.current -seconds $count)
+    $xml = xml-fill -Template $xml -Placeholder '{{keywords}}' -Value $data.Chapter
+    $xml = xml-fill -Template $xml -Placeholder '{{duration}}' -Value $data.'Length Seconds'
+    $xml = $xml.Replace('{{description}}', "$($data.Chapter)".Replace(']]>', ']]]]><![CDATA[>'))
 
-    write-output "$($string)"
+    write-output "$($xml)"
 
 }
 
