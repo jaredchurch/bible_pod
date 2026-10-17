@@ -33,7 +33,7 @@ $rssHeader=@"
         <description>This is a Zondervan TNIV {{section}}</description>
         <lastBuildDate>Sun, 01 Jan 2017 17:16:55 GMT</lastBuildDate>
         <language>en-us</language>
-        <copyright>Audio Copyright &copy; Zondervan</copyright>
+        <copyright>Audio Copyright &#169; Zondervan</copyright>
         <itunes:subtitle></itunes:subtitle>
         <itunes:author>Jared Church</itunes:author>
         <itunes:summary>Bible {{section}}</itunes:summary>

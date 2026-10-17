@@ -5,13 +5,27 @@ on:
     - cron: '0 14 * * *' # This runs the workflow every day at 3 AM NZT (2 PM UTC the previous day)
   workflow_dispatch:
 
+# Least privilege. contents:read is for checkout; pages:write plus id-token:write
+# are required together because deploy-pages exchanges an OIDC token for the
+# Pages deployment token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Pages accepts only one deployment at a time. Queue rather than cancel, so a
+# newer feed can never be replaced by an older run finishing late.
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Secrets
-        uses: bitwarden/sm-action@27c0c9dcab679d7250dbab91227c85b49ffa5e0f # v3.0.0
+        uses: bitwarden/sm-action@27c0c9dcab679d7250dbab91227c85b49ffa7e0f # v3.0.0
         with:
           access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
@@ -26,3 +40,31 @@ jobs:
           pwsh ./src/run.ps1
         env:
           TZ: Pacific/Auckland
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      # Globbed rather than listing the four feeds by name so a new category in
+      # the plan is published without a workflow edit. Scoped to *.xml so the
+      # bibleListenPlan.csv that run.ps1 also drops in the repo root stays
+      # unpublished; the .gitignore that hides those files does not apply to
+      # artifact uploads.
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: '*.xml'
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    # Required by GitHub to gate the deployment and to surface the page URL in
+    # the run summary
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
