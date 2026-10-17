@@ -1,8 +1,10 @@
 name: update_rss
 
 on:
-  schedule:
-    - cron: '0 14 * * *' # This runs the workflow every day at 3 AM NZT (2 PM UTC the previous day)
+  # Inherited from the retired static.yml, so pushing to main still deploys
+  push:
+    branches: ["main"]
+
   workflow_dispatch:
 
 # Least privilege. contents:read is for checkout; pages:write plus id-token:write
@@ -50,11 +52,12 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
-      # Globbed rather than listing the four feeds by name so a new category in
-      # the plan is published without a workflow edit. Scoped to *.xml so the
-      # bibleListenPlan.csv that run.ps1 also drops in the repo root stays
-      # unpublished; the .gitignore that hides those files does not apply to
-      # artifact uploads.
+      # Publishes the whole of ./public, so the static site and the generated
+      # feeds ship from a single deployment. bibleListenPlan.csv is excluded by
+      # the explicit `cp *.xml` above rather than by this path, since the CSV
+      # lands in the repo root and never enters ./public. Note that .gitignore
+      # does not apply to artifact uploads, so that cp is the only thing keeping
+      # the plan out of the published site.
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
