@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Secrets
-        uses: bitwarden/sm-action@27c0c9dcab679d7250dbab91227c85b49ffa5e0f # v3.0.0
+        uses: bitwarden/sm-action@27c0c9dcab679d7250dbab91227c85b49ffa7e0f # v3.0.0
         with:
           access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
@@ -48,16 +48,31 @@ jobs:
         env:
           TZ: Pacific/Auckland
 
+      # Guards against publishing a partial feed set. upload-pages-artifact
+      # takes a whole directory rather than listing files, so a feed that
+      # failed to generate would otherwise be deployed without it and any
+      # subscriber to that feed would 404 on the next run.
+      - name: Verify all six feeds were generated
+        run: |
+          missing=0
+          for f in tniv_OT tniv_NT tniv_Psalms tniv_Proverbs tniv_WNT tniv_WOT; do
+            if [ ! -s "$f.xml" ]; then
+              echo "MISSING or empty: $f.xml" >&2
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          ls -l tniv_*.xml
 
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
-      # Publishes the whole of ./public, so the static site and the generated
-      # feeds ship from a single deployment. bibleListenPlan.csv is excluded by
-      # the explicit `cp *.xml` above rather than by this path, since the CSV
-      # lands in the repo root and never enters ./public. Note that .gitignore
-      # does not apply to artifact uploads, so that cp is the only thing keeping
-      # the plan out of the published site.
+      # Publishes the whole of ./public, so the static site and the six
+      # generated feeds ship from a single deployment. bibleListenPlan.csv is
+      # excluded by the explicit `cp *.xml` above rather than by this path,
+      # since the CSV lands in the repo root and never enters ./public. Note
+      # that .gitignore does not apply to artifact uploads, so that cp is the
+      # only thing keeping the plan out of the published site.
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

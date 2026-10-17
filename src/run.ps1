@@ -21,6 +21,7 @@ param (
 # Include required modules
 . $PSScriptRoot/opendrive.ps1
 . $PSScriptRoot/rss.ps1
+. $PSScriptRoot/whole_bible.ps1
 
 # Global counter for generating publication dates in RSS items
 # there is some tech-debt around this global for handling pubDate generation - ideally this would be handled in a more robust way
@@ -119,7 +120,7 @@ function main() {
     }
 
 
-    # Get unique categories from the plan
+# Get unique categories from the plan
     $data.plan.Category | Select-Object -Unique | write-debug
 
     # Process each category separately to generate individual RSS feeds
@@ -141,6 +142,12 @@ function main() {
         # Generate RSS XML file for this category
         generate-rss-xml -data $data2  | out-file -encoding ascii "./tniv_$($_).xml"
     }
+
+    # Collapse the whole plan into a single feed per testament. Deliberately
+    # ignores $dayOfYearToday: these are always the complete year, so a
+    # subscriber starting mid-year gets the full sequence rather than a
+    # partial feed that silently refills over the following days.
+    generate-xml-whole-bible -plan "$PSScriptRoot/../bibleListenPlan.csv" -links $data.links -images $data.images
 
     # Upload generated RSS XML files to OpenDrive server
     if ( -not $NoUpload ) {
