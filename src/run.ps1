@@ -120,7 +120,7 @@ function main() {
     }
 
 
-# Get unique categories from the plan
+    # Get unique categories from the plan
     $data.plan.Category | Select-Object -Unique | write-debug
 
     # Process each category separately to generate individual RSS feeds
