@@ -1,13 +1,33 @@
 name: update_rss
 
 on:
-  schedule:
-    - cron: '0 14 * * *' # This runs the workflow every day at 3 AM NZT (2 PM UTC the previous day)
+  # Inherited from the retired static.yml, so pushing to main still deploys
+  push:
+    branches: ["main"]
+
   workflow_dispatch:
+
+# Least privilege. contents:read is for checkout; pages:write plus id-token:write
+# are required together because deploy-pages exchanges an OIDC token for the
+# Pages deployment token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Pages accepts only one deployment at a time. Queue rather than cancel, so a
+# newer feed can never be replaced by an older run finishing late.
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Secrets
@@ -24,5 +44,40 @@ jobs:
       - name: Run PowerShell script
         run: |
           pwsh ./src/run.ps1
+          cp *.xml ./public
         env:
           TZ: Pacific/Auckland
+
+      # Guards against publishing a partial feed set. upload-pages-artifact
+      # takes a whole directory rather than listing files, so a feed that
+      # failed to generate would otherwise be deployed without it and any
+      # subscriber to that feed would 404 on the next run.
+      - name: Verify all six feeds were generated
+        run: |
+          missing=0
+          for f in tniv_OT tniv_NT tniv_Psalms tniv_Proverbs tniv_WNT tniv_WOT; do
+            if [ ! -s "$f.xml" ]; then
+              echo "MISSING or empty: $f.xml" >&2
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          ls -l tniv_*.xml
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      # Publishes the whole of ./public, so the static site and the six
+      # generated feeds ship from a single deployment. bibleListenPlan.csv is
+      # excluded by the explicit `cp *.xml` above rather than by this path,
+      # since the CSV lands in the repo root and never enters ./public. Note
+      # that .gitignore does not apply to artifact uploads, so that cp is the
+      # only thing keeping the plan out of the published site.
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
