@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Secrets
-        uses: bitwarden/sm-action@27c0c9dcab679d7250dbab91227c85b49ffa7e0f # v3.0.0
+        uses: bitwarden/sm-action@27c0c9dcab679d7250dbab91227c85b49ffa5e0f # v3.0.0
         with:
           access_token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
@@ -81,18 +81,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
-
-  # deploy:
-  #   needs: build
-  #   runs-on: ubuntu-latest
-
-  #   # Required by GitHub to gate the deployment and to surface the page URL in
-  #   # the run summary
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-
-  #   steps:
-  #     - name: Deploy to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
