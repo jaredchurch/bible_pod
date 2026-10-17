@@ -5,13 +5,26 @@ on:
     - cron: '0 14 * * *' # This runs the workflow every day at 3 AM NZT (2 PM UTC the previous day)
   workflow_dispatch:
 
+# contents:read is for checkout; pages:write plus id-token:write are required
+# together because deploy-pages exchanges an OIDC token for the Pages token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Pages accepts one deployment at a time. Queue rather than cancel, so an older
+# run finishing late cannot overwrite a newer set of feeds.
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Run PowerShell script
         run: |
@@ -20,3 +33,33 @@ jobs:
           OPENDRIVE_USERNAME: ${{ secrets.OPENDRIVE_USERNAME }}
           OPENDRIVE_PASSWORD: ${{ secrets.OPENDRIVE_PASSWORD }}
           TZ: Pacific/Auckland
+
+      # Guards against publishing a partial feed set. upload-pages-artifact globs
+      # rather than listing files, so a feed that failed to generate would
+      # otherwise be omitted silently and any subscriber to it would 404.
+      - name: Verify all six feeds were generated
+        run: |
+          missing=0
+          for f in tniv_OT tniv_NT tniv_Psalms tniv_Proverbs tniv_WNT tniv_WOT; do
+            if [ ! -s "$f.xml" ]; then
+              echo "MISSING or empty: $f.xml" >&2
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          ls -l tniv_*.xml
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      # Publishes the six generated feeds from the repo root, where run.ps1 and
+      # whole_bible.ps1 write them. .gitignore excludes *.xml from git, but it
+      # has no effect on artifact uploads, so only what run.ps1 wrote is served.
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: '*.xml'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

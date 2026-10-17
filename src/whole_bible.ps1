@@ -37,22 +37,9 @@ function generate-xml-whole-bible() {
         } | out-file -encoding ascii "./tniv_$($_).xml"
     }
 
-    $PutFiles=@(
-        @{
-            localPath='./tniv_WNT.xml'
-            remotePath='/bible_pod/rss/tniv_WNT.xml'
-        },
-        @{
-            localPath='./tniv_WOT.xml'
-            remotePath='/bible_pod/rss/tniv_WOT.xml'
-        }
-    )
-
-    $UserName=$env:OPENDRIVE_USERNAME
-    $Password=$env:OPENDRIVE_PASSWORD
-
-    put-xml -USERNAME $UserName -PASSWORD $Password -fileList $PutFiles
-
+    # Deliberately no put-xml call: these feeds are published via GitHub Pages
+    # rather than OpenDrive. Uploading from here also bypassed -noUpload, so a
+    # local test run would have written to production.
 }
 
 ### End of File
