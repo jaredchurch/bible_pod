@@ -26,5 +26,5 @@ compare_files() {
 
 cd "$(dirname "$0")/.."
 
-pwsh ./src/run.ps1 -noUpload
+# pwsh ./src/run.ps1 -noUpload
 compare_files

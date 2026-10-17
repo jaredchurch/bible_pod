@@ -140,7 +140,7 @@ function main() {
         "{0,10} {1,-10}" -f "$($data2.category):","$($data2.plan.count)"
 
         # Generate RSS XML file for this category
-        generate-rss-xml -data $data2  | out-file -encoding ascii "./tniv_$($_).xml"
+        generate-rss-xml -data $data2  | out-file -encoding ascii "./$(get-feed-filename $_)"
     }
 
     # Collapse the whole plan into a single feed per testament. Deliberately

@@ -1,2 +1,4 @@
 *.xml
 ./test
+.env*
+continue.md
