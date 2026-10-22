@@ -1,0 +1,14 @@
+# Robots exclusion for the published podcast feeds.
+#
+# Published from ./public, so it is served at /bible_pod/robots.txt.
+#
+# Caveat worth knowing: crawlers only honour robots.txt when it sits at the
+# domain root, so this file has no effect at https://jaredchurch.github.io/. The
+# effective control here is the noindex meta tag in ./public/index.html; this
+# file documents the intent and takes effect only if the site is ever served
+# from the domain root, e.g. behind a custom domain.
+#
+# Nothing of value is exposed regardless: every media link in the feeds is
+# pre-signed and expires, so an unexpired URL is the only way to fetch audio.
+User-agent: *
+Disallow: /
