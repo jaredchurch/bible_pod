@@ -44,22 +44,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
-      - name: Run PowerShell script - opendrive
-        run: |
-          pwsh ./src/run.ps1
-          cp *.xml ./public
-        env:
-          TZ: Pacific/Auckland
+      # The OpenDrive backend is disabled: the feeds are generated from the
+      # Cloudflare R2 bucket instead. The step is kept here, commented out, so
+      # it can be switched back on without having to reconstruct it.
+      #
+      # Note that this also stops the put-xml upload inside src/run.ps1, which
+      # is what publishes www.opendrive.com/bible_pod/rss/tniv_*.xml. That URL
+      # is the one the podcast apps are subscribed to, so it stops updating
+      # until the subscription is repointed at the GitHub Pages feed.
+      #
+      #   - name: Run PowerShell script - opendrive
+      #     run: |
+      #       pwsh ./src/run.ps1
+      #       cp *.xml ./public
+      #     env:
+      #       TZ: Pacific/Auckland
 
-      # Runs after the OpenDrive copy above, which is what keeps the two sets
-      # apart: this script writes the same .xml filenames to the repo root, so
-      # the OpenDrive set has to be copied out of the way first. These feeds
-      # land in ./public/rss, served at /bible_pod/rss, which is the self-link
-      # run-cloudflare.ps1 emits.
+      # The R2 feeds land in ./public/rss, served at /bible_pod/rss, which is
+      # the self-link run-cloudflare.ps1 emits. They are also copied to the
+      # site root, where the OpenDrive set used to be served, so the existing
+      # /bible_pod/tniv_*.xml URLs keep resolving. Only the Cloudflare set is
+      # generated, so the two copies are the same files.
       - name: Run PowerShell script - Cloudflare
         run: |
           mkdir -p ./public/rss
           pwsh ./src/run-cloudflare.ps1
+          cp *.xml ./public
           cp *.xml ./public/rss/
         env:
           TZ: Pacific/Auckland
@@ -67,10 +77,9 @@ jobs:
       # Guards against publishing a partial feed set. upload-pages-artifact
       # takes a whole directory rather than listing files, so a feed that
       # failed to generate would otherwise be deployed without it and any
-      # subscriber to that feed would 404 on the next run. Both sets are checked
-      # where they are served from rather than in the repo root, since by now
-      # the root holds only the Cloudflare output: each script overwrites the
-      # previous one's files.
+      # subscriber to that feed would 404 on the next run. Both directories are
+      # checked where they are served from rather than in the repo root, since
+      # the root only holds the generated output until it is copied.
       - name: Verify all six feeds were generated
         run: |
           missing=0

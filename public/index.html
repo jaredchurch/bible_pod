@@ -7,6 +7,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!--
+    This site exists only to serve the podcast feeds. The noindex directive is
+    the exclusion that actually takes effect: robots.txt is only honoured at the
+    domain root, and this page is served from /bible_pod/.
+  -->
+  <meta name="robots" content="noindex, nofollow">
   <title>Dev site</title>
 </head>
 <body>

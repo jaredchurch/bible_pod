@@ -33,6 +33,17 @@ $rssHeader=@"
 <rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
     <channel>
 
+        <!--
+            Keeps the feeds out of search indexes. RSS has no standard
+            equivalent, so this is the XHTML robots meta, which is the
+            convention Google documents for feeds. Note the trade-off: Google
+            deliberately indexes podcast feeds, and treats one blocked by
+            robots.txt or noindex as failing its podcast guidelines, so this
+            opts out of automatic discovery in podcast directories. Remove it if
+            that changes.
+        -->
+        <xhtml:meta xmlns:xhtml="http://www.w3.org/1999/xhtml" name="robots" content="noindex, nofollow" />
+
         <atom:link href="{{webBaseURL}}{{feedPath}}/{{feedFile}}" rel="self" type="application/rss+xml" />
         <title>Bible - Zondervan TNIV {{section}}</title>
         <link>{{webBaseURL}}{{feedPath}}/{{feedFile}}</link>
