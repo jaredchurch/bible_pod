@@ -7,14 +7,11 @@ on:
 
   workflow_dispatch:
 
-# Least privilege. contents:read is for checkout; actions:read lets deploy-pages
-# find and download the uploaded Pages artifact; pages:write plus id-token:write
-# are required together to create the Pages deployment via OIDC.
+# Keep the workflow permissions minimal. The build job only reads repository
+# contents and Pages configuration; the deploy job receives the write access
+# required to publish the site.
 permissions:
   contents: read
-  actions: read
-  pages: write
-  id-token: write
 
 # Pages accepts only one deployment at a time. Queue rather than cancel, so a
 # newer feed can never be replaced by an older run finishing late.
@@ -26,9 +23,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: read
 
     steps:
       - name: Secrets
@@ -109,6 +106,22 @@ jobs:
         with:
           path: './public'
 
+  # Keep deployment in a separate job. The Pages artifact service can take a
+  # short time to expose a just-uploaded artifact to deploy-pages; starting a
+  # new job avoids racing the upload's finalisation/indexing.
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
